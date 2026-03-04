@@ -40,13 +40,13 @@ def on_key_event(event):
 
 def fruit_transport(row, col):
     """Moves a desktop icon to act as a random fruit."""
-    pag.moveTo(wd/2 + (col-1) * wd, ln/2 + (row-1) * ln)
+    pag.moveTo(int(wd/2) + (col-1) * wd, int(ln/2) + (row-1) * ln)
     while True:
         br=True
         x = random.randint(col, 19) 
         y = random.randint(0, 7)
-        x=wd/2 + x * wd
-        y= ln/2 + y * ln
+        x=int(wd/2) + x * wd
+        y= int(ln/2) + y * ln
         global snake_body
         for positions in snake_body:
             dx = abs(x - positions[0])
@@ -91,8 +91,8 @@ def win(icon,l):
 
 def win_mssg(i):
     mssg = [(6, 4), (6, 5), (6, 6), (7, 7), (8, 6), (9, 7), (10, 6), (10, 5), (10, 4), (13, 4), (13, 5), (13, 6), (13, 7), (16, 4), (16, 5), (16, 6), (16, 7), (17, 5), (18, 6), (19, 4), (19, 5), (19, 6), (19, 7), (13, 3)]
-    x=wd/2 + mssg[i][0] * wd
-    y=ln/2 + mssg[i][1] * ln
+    x=int(wd/2) + mssg[i][0] * wd
+    y=int(ln/2) + mssg[i][1] * ln
     return (x,y)
 
 def main():
@@ -123,8 +123,8 @@ def main():
     pag.alert(text='Use arrow keys to move. Press ESC to exit',title='Desktop Snake Game',button='OK')
 
     # Initialize the snake body with the starting coordinate
-    start_x = wd/2 + (column-1) * wd
-    start_y = ln/2 + (row-1) * ln
+    start_x = int(wd/2) + (column-1) * wd
+    start_y = int(ln/2) + (row-1) * ln
     snake_body = [(start_x, start_y)]
     
     pag.click(start_x, start_y) 
@@ -181,7 +181,7 @@ def main():
                     for i in range(24):
                         column = ((icon-1) // 8) + 1
                         row = icon % 8 if icon%8!=0 else 8
-                        pag.moveTo(wd/2 + (column-1) * wd, ln/2 + (row-1) * ln)
+                        pag.moveTo(int(wd/2) + (column-1) * wd, int(ln/2) + (row-1) * ln)
                         time.sleep(0.2)
                         pag.mouseDown(button='left') 
                         pag.moveTo(win_mssg(i)[0],win_mssg(i)[1], duration=duration_drag)
