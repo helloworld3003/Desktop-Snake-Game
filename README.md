@@ -6,6 +6,10 @@ Instead of drawing pixels on a canvas, this script uses `pyautogui` to physicall
 
 **📸 Peace of Mind Feature:** Don't worry about losing your carefully arranged desktop layout! Before the game auto-arranges anything, it automatically takes a screenshot of your screen and saves it right to your Desktop as `orignal_desktop.png` so you can easily restore your layout later.
 
+
+https://github.com/user-attachments/assets/0d1b63e7-06c4-4f8f-92ed-3a656e836d15
+
+
 ## ⚠️ Assumptions & Requirements
 Because this game interacts directly with your OS GUI, it requires a specific environment to run correctly:
 * **Operating System:** Windows 
@@ -69,4 +73,5 @@ Because this game physically drags your desktop icons and relies on specific OS 
 * **Expand Compatibility:** Currently, the grid math is heavily optimized for a 1920x1080 display. If you can help make the grid calculations dynamically scale to any monitor resolution, that would be a massive improvement. 
 
 To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
+
 
