@@ -50,4 +50,20 @@ If you want to view the code, debug, or modify the game:
 * `requirements.txt`: Python package dependencies (primarily `pyautogui` and `keyboard`).
 
 ## 🏆 Winning the Game
+
 The game ends if you hit the edge of the screen, run into your own tail, or press `ESC`. However, if you successfully eat all the target icons, you win. If your desktop has 24 or more icons, you will unlock a special automated desktop-icon arrangement at the end of the game!
+
+## 🤝 Feedback & Contributions Wanted!
+
+Because this game physically drags your desktop icons and relies on specific OS interactions, it is highly experimental. Every computer setup is a little different, so I would love your help testing it out and improving it!
+
+**🎮 For Players & Testers:**
+* **Play the game:** Download the `.exe` from the Releases tab and give it a try.
+* **Report Bugs:** Did the snake glitch near the taskbar? Did it accidentally open an app while dragging? If something breaks, please open an **Issue** on this repository. Let me know your screen resolution and Windows version!
+* **Suggest Features:** Have a cool idea for a new feature or a different pixel-art win screen? Let me know in the Issues tab.
+
+**💻 For Developers:**
+* **Review & Optimize:** Feel free to fork this repository! If you can improve the `pyautogui` dragging efficiency, make the `fruit_transport` logic faster, or optimize the `icon_organizer.py`, your pull requests are welcome.
+* **Expand Compatibility:** Currently, the grid math is heavily optimized for a 1920x1080 display. If you can help make the grid calculations dynamically scale to any monitor resolution, that would be a massive improvement. 
+
+To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
