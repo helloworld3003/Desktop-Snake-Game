@@ -13,10 +13,9 @@ https://github.com/user-attachments/assets/0d1b63e7-06c4-4f8f-92ed-3a656e836d15
 ## ⚠️ Assumptions & Requirements
 Because this game interacts directly with your OS GUI, it requires a specific environment to run correctly:
 * **Operating System:** Windows 
-* **Display Resolution:** 1920x1080
+* **Display Resolution:** Any(Automatically detects and adjusts)
 * **Icon Settings:** Medium Icons, Auto-arrange disabled during gameplay, Align to grid.
-* **Grid Dimensions:** Assumes a standard 95x125 desktop icon grid spacing.
-* **Settings:** "Drag to share" or "Single-click to open an item" must be turned OFF in Windows settings.
+* **Settings:** "Drag to share" or "Single-click to open an item" must be turned OFF in Windows settings. Rainmeter is not running.
 
 ## 🎮 How to Play (For Gamers)
 If you just want to play the game without messing with Python code:
@@ -76,6 +75,7 @@ Because this game physically drags your desktop icons and relies on specific OS 
 * **Expand Compatibility:** Currently, the grid math is heavily optimized for a 1920x1080 display. If you can help make the grid calculations dynamically scale to any monitor resolution, that would be a massive improvement. 
 
 To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
+
 
 
 
