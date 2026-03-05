@@ -1,22 +1,47 @@
-import random
-import pyautogui as pag
-import time
-import icon_organizer as io
-import keyboard as kb
 import os
+import time
+import random
+from typing import Tuple, List
 
-fruit = []
-snake_body = []          # Tracks the (x, y) coordinates of every icon in the snake
-duration_drag = 0.3      # Set the duration for dragging the mouse
-wd=95;ln=125
-on = True                # game loop continue
-previous = 'right'       # Variable to track the previous direction for turns
-next_direction = None    # Queue for the next direction input
-window_size=pag.size()   # Window size
-reason=''                # Reason for exit from game 
-def on_key_event(event):
-    """Handle keyboard events for direction changes."""
-    global next_direction, on, previous,reason
+import keyboard as kb
+import pyautogui as pag
+
+import grid_size
+import icon_organizer as io
+
+# ==============================================================================
+# ======================== DESKTOP SNAKE GAME ==================================
+# ==============================================================================
+
+# --- Game Configuration & Grid Setup ---
+window_size = pag.size()     # Current screen resolution
+duration_drag = 0.3          # Mouse drag duration for moving icons
+wd = 95                      # Initial cell width
+ln = 130                     # Initial cell length
+r = 8                        # Total grid rows
+c = 20                       # Total grid columns
+
+# Retrieve accurate spacing based on screen metrics
+wd, ln, r, c = grid_size.get_true_desktop_spacing(window_size)
+
+# --- Game State Variables ---
+fruit: List[int] = []        # Coordinates of the active fruit
+snake_body: List[Tuple[int, int]] = []  # Tracks (x, y) coordinates of every snake segment
+on = True                    # Master flag for the main game loop
+previous = 'right'           # Tracks the current movement direction
+next_direction = None        # Queue for upcoming direction input
+reason = ''                  # Descriptive reason for exiting the game
+
+# ==============================================================================
+# ======================== CORE FUNCTIONS ======================================
+# ==============================================================================
+
+def on_key_event(event) -> None:
+    """
+    Handle keyboard events for direction changes smoothly.
+    Listens for arrow keys and ESC to update the movement queue.
+    """
+    global next_direction, on, previous, reason
     
     try:
         # Convert to string and lowercase to avoid CapsLock/Shift bugs
@@ -32,37 +57,57 @@ def on_key_event(event):
             elif key_name == 'right' and previous != 'left':
                 next_direction = 'right'
             elif key_name == 'esc':
-                # print("ESC pressed - exiting")
-                reason="ESC pressed - exiting"
+                reason = "ESC pressed - exiting! 🚪"
                 on = False
     except Exception as e:
-        print(f"Error in on_key_event: {e}")
+        print(f"⚠️ Error in on_key_event: {e}")
 
-def fruit_transport(row, col):
-    """Moves a desktop icon to act as a random fruit."""
-    pag.moveTo(int(wd/2) + (col-1) * wd, int(ln/2) + (row-1) * ln)
+
+def fruit_transport(row: int, col: int) -> None:
+    """
+    Generates a new fruit by moving a target desktop icon to a random, 
+    unoccupied grid coordinate.
+    """
+    global fruit, snake_body
+
+    # Navigate to the target icon's original grid position
+    start_x = int(wd/2) + (col-1) * wd
+    start_y = int(ln/2) + (row-1) * ln
+    pag.moveTo(start_x, start_y)
+    
     while True:
-        br=True
-        x = random.randint(col, 19) 
-        y = random.randint(0, 7)
-        x=int(wd/2) + x * wd
-        y= int(ln/2) + y * ln
-        global snake_body
+        is_valid_position = True
+        
+        # Pick random column and row for the fruit
+        grid_col = random.randint(col, c-1) 
+        grid_row = random.randint(0, r-1)
+        
+        # Calculate actual screen coordinates
+        target_x = int(wd/2) + grid_col * wd
+        target_y = int(ln/2) + grid_row * ln
+        
+        # Check against existing snake body coordinates to avoid overlaps
         for positions in snake_body:
-            dx = abs(x - positions[0])
-            dy = abs(y - positions[1])
-            # Using your original proximity logic
+            dx = abs(target_x - positions[0])
+            dy = abs(target_y - positions[1])
+            
+            # Using original proximity logic
             if ((dx < wd and dy < 50) or (dx < 50 and dy < ln)):
-                br=False
+                is_valid_position = False
                 break
-        if br:
+                
+        if is_valid_position:
             break
-    pag.dragTo(x,y, duration=duration_drag)
-    global fruit
+            
+    # Drag the icon to form the new fruit
+    pag.dragTo(target_x, target_y, duration=duration_drag)
     fruit = pag.position()
 
-def fruit_eat(dir,position):
-    """Checks if the snake head is close enough to the fruit."""
+
+def fruit_eat(direction: str, position: Tuple[int, int]) -> bool:
+    """
+    Validates if the snake's head is hovering sufficiently close to eat the fruit.
+    """
     global fruit
     if not fruit:
         return False
@@ -70,85 +115,130 @@ def fruit_eat(dir,position):
     dx = abs(fruit[0] - position[0])
     dy = abs(fruit[1] - position[1])
     
-    # Using your original proximity logic
-    if (dx < wd and dy < 50 and dir in ['left','right']) or (dx < 50 and dy < ln and dir in ['up','down']):
+    # Proximity hit-box logic based on direction
+    if (dx < wd and dy < 50 and direction in ['left', 'right']) or \
+       (dx < 50 and dy < ln and direction in ['up', 'down']):
         return True    
     return False
 
-def snake_body_collission(currentx,currenty):
-    col=False
+
+def snake_body_collission(currentx: int, currenty: int) -> bool:
+    """
+    Checks if the snake has collided with its own body segments.
+    """
     for positions in snake_body:
         dx = abs(currentx - positions[0])
         dy = abs(currenty - positions[1])
-        # Using your original proximity logic
-        if ((dx < wd and dy < 50) or (dx < 50 and dy < ln)):
-            col=True
-            break
-    return col
+        
+        # Precision hit-box check to confirm collision
+        if ((dx < wd and dy < int(ln/2)) or (dx < int(wd/2) and dy < ln)):
+            return True
+            
+    return False
 
-def win(icon,l):
-    return icon==l
 
-def win_mssg(i):
-    mssg = [(6, 4), (6, 5), (6, 6), (7, 7), (8, 6), (9, 7), (10, 6), (10, 5), (10, 4), (13, 4), (13, 5), (13, 6), (13, 7), (16, 4), (16, 5), (16, 6), (16, 7), (17, 5), (18, 6), (19, 4), (19, 5), (19, 6), (19, 7), (13, 3)]
-    x=int(wd/2) + mssg[i][0] * wd
-    y=int(ln/2) + mssg[i][1] * ln
-    return (x,y)
+def win(icon_count: int, snake_length: int) -> bool:
+    """
+    Determines if the winning condition is met.
+    """
+    return icon_count == snake_length
 
-def main():
+
+def win_mssg(i: int) -> Tuple[int, int]:
+    """
+    Coordinates to draw out a winning message using desktop icons!
+    """
+    mssg = [
+        (6, 4), (6, 5), (6, 6), (7, 7), (8, 6), (9, 7), (10, 6), (10, 5), (10, 4), 
+        (13, 4), (13, 5), (13, 6), (13, 7), 
+        (16, 4), (16, 5), (16, 6), (16, 7), (17, 5), (18, 6), (19, 4), (19, 5), (19, 6), (19, 7), 
+        (13, 3)
+    ]
+    x = int(wd/2) + mssg[i][0] * wd
+    y = int(ln/2) + mssg[i][1] * ln
+    return (x, y)
+
+
+# ==============================================================================
+# ======================== MAIN GAME LOOP ======================================
+# ==============================================================================
+
+def main() -> None:
     global on, next_direction, previous, snake_body, reason
-    # setting up necessary conditions for the game
+    
+    # ---------------------------
+    # 1. Environment Initialization
+    # ---------------------------
     try:
-        io.open_desktop() # Open the desktop to ensure the snake game is in focus       
+        print("🎮 Initializing Desktop Snake Game...")
+        io.open_desktop()  # Ensure the desktop is in focus       
         time.sleep(0.2)
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop", "orignal_desktop.png") 
-        pag.screenshot(desktop)
-        io.medium_icons() # Set medium icons for better visibility
-        io.move_icons() # Enable auto arrange to keep icons organized
-        ic = int(io.scan_desktop('Desktop Snake Game')) # Get the number of icons on the desktop
-        icon=ic
+        
+        # Take a snapshot of the original layout for backup safety
+        timestamp = time.strftime("%H_%M_%S", time.localtime())
+        desktop_path = os.path.join(os.path.expanduser("~"), "Desktop", f"original_desktop_{timestamp}.png") 
+        pag.screenshot(desktop_path)
+        
+        io.move_icons()     # Align icons neatly
+        ic = int(io.scan_desktop('Desktop Snake Game')) 
+        icon = ic
+        
+        if not (2 <= ic < int(r * c * 0.7)):
+            print("❌ Invalid number of icons on the desktop. Exiting.")
+            return
+            
     except Exception as e:
-        print(f"Failed to initialize icon_organizer: {e}")
+        print(f"❌ Failed to initialize desktop environment: {e}")
         return
 
-    column = ((icon-1) // 8) + 1
-    row = icon % 8 if icon%8!=0 else 8
+    # ---------------------------
+    # 2. Starting Setup
+    # ---------------------------
+    column = ((icon-1) // r) + 1
+    row = icon % r if icon % r != 0 else r
 
-    # First icon transfer
-    fruit_transport(row, column) # Move fruit to random position
+    # Move the very first fruit into play area
+    fruit_transport(row, column) 
     icon -= 1 
-    column = ((icon-1) // 8) + 1
-    row = icon % 8 if icon%8!=0 else 8
-    icon-=1
-    pag.alert(text='Use arrow keys to move. Press ESC to exit',title='Desktop Snake Game',button='OK')
+    
+    # Set the start coordinate of the snake head
+    column = ((icon-1) // r) + 1
+    row = icon % r if icon % r != 0 else r
+    icon -= 1
+    
+    pag.alert(text='🎮 Use arrow keys to move.\n🛑 Press ESC to exit.', title='Desktop Snake Game', button='OK')
 
-    # Initialize the snake body with the starting coordinate
     start_x = int(wd/2) + (column-1) * wd
     start_y = int(ln/2) + (row-1) * ln
     snake_body = [(start_x, start_y)]
     
+    # Emulate the start by clicking at the root coordinate
     pag.click(start_x, start_y) 
     time.sleep(0.2)
     
-    print("Snake movement controls active!")
-    print("Use arrow keys to move")
-    print("Press ESC to exit")
+    print("\n=========================================")
+    print("🐍 Snake movement controls are ACTIVE! 🐍")
+    print("   🕹️  Use arrow keys to move")
+    print("   🚪  Press ESC to exit")
+    print("=========================================\n")
     
-    # Continuos game loop
     try:
-        kb.on_press(on_key_event) # detect key press
+        kb.on_press(on_key_event) # Listen for key events
     except Exception as e:
-        print(f"Error setting up keyboard listener: {e}")
+        print(f"❌ Error setting up keyboard listener: {e}")
         return
     
+    # ---------------------------
+    # 3. Execution Game Loop
+    # ---------------------------
     try:
         while on:
-            # 1. Update direction from queue
+            # Update direction logically 
             if next_direction is not None:
                 previous = next_direction
                 next_direction = None
                 
-            # 2. Calculate the exact coordinate for the new head position
+            # Compute new head coordinate
             head_x, head_y = snake_body[0]
             offsets = {
                 'right': (wd, 0),
@@ -156,97 +246,122 @@ def main():
                 'down': (0, ln),
                 'up': (0, -ln)
             }
+            
             dx, dy = offsets[previous]
             new_head_x = head_x + dx
             new_head_y = head_y + dy
             
-            # 3. Wall hit check
-            if not(column * wd<new_head_x <(window_size[0]-25) and 25<new_head_y<(8 * ln)):
-                reason="Snake hit the wall - game over!"
+            # --- Check Collision Rules ---
+            
+            # 1. Wall Hit Check
+            out_of_bounds_x = not (column * wd < new_head_x < (window_size[0] - 25))
+            out_of_bounds_y = not (25 < new_head_y < (r * ln))
+            if out_of_bounds_x or out_of_bounds_y:
+                reason = "💥 Crash! The snake hit the desktop border - Game Over!"
                 on = False
                 break
             
-            # 4. Snake body eaten check
-            if snake_body_collission(new_head_x,new_head_y):
-                reason='Your snake has eaten its own body'
-                on=False
+            # 2. Self Collision Check
+            if snake_body_collission(new_head_x, new_head_y):
+                reason = '💥 Ouch! The snake has entangled and eaten its own body!'
+                on = False
                 break
 
-            # 5. Win
-            if win(ic,len(snake_body)):
-                icon=ic
-                # Display win Message If icon count >=24
-                if ic>=24:
+            # 3. Win Condition Check
+            if win(ic, len(snake_body)):
+                icon = ic
+                # Secret easter egg execution if icons >= 24
+                if ic >= 24:
                     io.move_icons()
                     for i in range(24):
-                        column = ((icon-1) // 8) + 1
-                        row = icon % 8 if icon%8!=0 else 8
-                        pag.moveTo(int(wd/2) + (column-1) * wd, int(ln/2) + (row-1) * ln)
+                        column = ((icon-1) // r) + 1
+                        row = icon % r if icon % r != 0 else r
+                        
+                        target_x = int(wd/2) + (column-1) * wd
+                        target_y = int(ln/2) + (row-1) * ln
+                        
+                        pag.moveTo(target_x, target_y)
                         time.sleep(0.2)
+                        
                         pag.mouseDown(button='left') 
-                        pag.moveTo(win_mssg(i)[0],win_mssg(i)[1], duration=duration_drag)
+                        final_x, final_y = win_mssg(i)
+                        pag.moveTo(final_x, final_y, duration=duration_drag)
                         pag.mouseUp(button='left')
-                        icon-=1
-                reason='You Have Won'
-                on=False
+                        
+                        icon -= 1
+                reason = '🏆 VICTORY! You Have Won The Game!'
+                on = False
                 break
             
-            # 6. Move and check for fruit
+            # --- Move & Consume ---
+            
             new_position = (new_head_x, new_head_y)
             
-            if fruit_eat(previous,new_position):
-                # Snake grows: The fruit icon becomes the new head
+            if fruit_eat(previous, new_position):
+                # Consume fruit & Grow!
                 snake_body.insert(0, new_position)
                 
-                # Fetch a new icon for the next fruit
-                column = ((icon-1) // 8) + 1
-                row = icon % 8 if icon%8!=0 else 8
+                # Setup Next Fruit
+                column = ((icon-1) // r) + 1
+                row = icon % r if icon % r != 0 else r
                 fruit_transport(row, column)
                 icon -= 1 
                 
-                # Place mouse back on the new head
+                # Orient crosshairs back to the snake head
                 pag.moveTo(new_head_x, new_head_y)
-                print(f"{len(snake_body)-1} Icons eaten! Snake length increased to {len(snake_body)}. Remaining icons: {icon}")
+                print(f"🍎 Yum! +1 Score. Length: {len(snake_body)} | Remaining Icons: {icon}")
             
             else:
-                # Normal move: Drag the tail icon to the new head position
+                # Ordinary movement (Shift tail to new head pos)
                 tail_x, tail_y = snake_body[-1]
+                
                 pag.moveTo(tail_x, tail_y)
                 time.sleep(0.1)
+                
+                # Visual effect of sliding the icon on desk
                 pag.mouseDown(button='left') 
                 pag.moveTo(new_head_x, new_head_y, duration=duration_drag)
-                pag.mouseUp(button='left')                
-                # Update snake array 
+                pag.mouseUp(button='left')  
+                              
+                # Logical body adjustment
                 snake_body.insert(0, new_position)
-                snake_body.pop() # Remove the old tail
+                snake_body.pop() # Evict trailing tail pixel
 
             time.sleep(0.2)
-    
-    # Exit            
+            
     except KeyboardInterrupt:
         on = False
-        print("\nExiting snake control...")
+        print("\n🛑 Force Exiting snake control...")
     except Exception as e:
-        print(f"Error in main loop: {e}")
+        print(f"⚠️ Error encountered during execution loop: {e}")
+        
+    # ---------------------------
+    # 4. Graceful Cleanup
+    # ---------------------------
     finally:
         try:
             kb.remove_all_hotkeys()
-            print(f'Final Score : {len(snake_body)-1} Icons eaten out of {len(snake_body)+icon}')
-            print(f'Reason for exit : {reason}')
-            # Win message
-            if win(ic,len(snake_body)):
-                pag.alert(text='Congratulations You have eaten all the icons in your desktop',title='Desktop Snake Game',button='OK')
-                print('Congratulations You have eaten all the icons in your desktop')
-            # Other exit messages
-            else:
-                pag.alert(text=f'Reason for exit : {reason}',title='Desktop Snake Game',button='OK')
-                pag.alert(text=f'Final Score : {len(snake_body)-1} Icons eaten out of {len(snake_body)+icon}',title='Desktop Snake Game',button='OK')
+            final_score = len(snake_body) - 1
+            max_score = len(snake_body) + icon
             
-                # arranging the icons in  a proper way before leaving
+            print("\n=========================================")
+            print(f"🎯 Final Score: {final_score}/{max_score} Icons eaten")
+            print(f"📝 Reason: {reason}")
+            print("=========================================\n")
+            
+            if win(ic, len(snake_body)):
+                pag.alert(text='🏆 Congratulations! You have consumed all the icons on your desktop!', title='Desktop Snake Game', button='OK')
+                pag.click(1, 1)
+                pag.hotkey('ctrl', 'a')
+            else:
+                msg = f"{reason}\nFinal Score: {final_score}/{max_score}"
+                pag.alert(text=msg, title='Desktop Snake Game', button='OK')
+            
+                # Standardize arrangement before abandoning UI
                 io.open_desktop()
                 io.move_icons()
-        except:
-            pass
+        except Exception as e:
+            print(f"Cleanup non-fatal error: {e}")
 
 if __name__ == "__main__":
     main()

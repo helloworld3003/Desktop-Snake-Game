@@ -50,6 +50,9 @@ If you want to view the code, debug, or modify the game:
    python snake_game_desktop.py
    ```
 
+### 🚀 Latest Updates v1.0.2
+The game engine has been completely overhauled to remove all hardcoded constraints, replacing fixed values with dynamic variables. The grid math now automatically scales to flawlessly match any screen resolution and Windows DPI setting. This is powered by a newly added `grid_size.py` utility, which directly queries the hidden Windows `SysListView32` to extract your true physical desktop rendering metrics. Alongside these structural upgrades, the core codebase and terminal outputs have been polished and decorated for a cleaner, more intuitive experience.
+
 ## 📂 File Structure
 * `snake_game_desktop.py`: The main game loop, input handling, and grid math.
 * `icon_organizer.py`: A custom supporting module that prepares the desktop by aligning and organizing icons before the game starts.
@@ -73,5 +76,6 @@ Because this game physically drags your desktop icons and relies on specific OS 
 * **Expand Compatibility:** Currently, the grid math is heavily optimized for a 1920x1080 display. If you can help make the grid calculations dynamically scale to any monitor resolution, that would be a massive improvement. 
 
 To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
+
 
 
