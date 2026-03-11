@@ -1,13 +1,14 @@
 import os
 import time
 import random
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 import keyboard as kb
 import pyautogui as pag
 
 import grid_size
 import icon_organizer as io
+from physical_mouse_blocking import MouseBlocker
 
 # ==============================================================================
 # ======================== DESKTOP SNAKE GAME ==================================
@@ -20,12 +21,15 @@ wd = 95                      # Initial cell width
 ln = 130                     # Initial cell length
 r = 8                        # Total grid rows
 c = 20                       # Total grid columns
+BORDER_PADDING = 25          # Padding from screen edges
+EASTER_EGG_ICON_COUNT = 24   # Icon count to trigger Easter Egg
+GAME_TICK = 0.3              # Fixed interval (in seconds) for each game frame
 
 # Retrieve accurate spacing based on screen metrics
 wd, ln, r, c = grid_size.get_true_desktop_spacing(window_size)
 
 # --- Game State Variables ---
-fruit: List[int] = []        # Coordinates of the active fruit
+fruit: Optional[Tuple[int, int]] = None  # Coordinates of the active fruit
 snake_body: List[Tuple[int, int]] = []  # Tracks (x, y) coordinates of every snake segment
 on = True                    # Master flag for the main game loop
 previous = 'right'           # Tracks the current movement direction
@@ -35,6 +39,11 @@ reason = ''                  # Descriptive reason for exiting the game
 # ==============================================================================
 # ======================== CORE FUNCTIONS ======================================
 # ==============================================================================
+
+def get_pixels(col: int, row: int) -> Tuple[int, int]:
+    """Convert abstract grid coordinate to precise desktop screen pixel coordinates."""
+    return int(wd/2) + col * wd, int(ln/2) + row * ln
+
 
 def on_key_event(event) -> None:
     """
@@ -48,13 +57,13 @@ def on_key_event(event) -> None:
         key_name = str(event.name).lower()
         
         if event.event_type == 'down':
-            if key_name == 'up' and previous != 'down':
+            if key_name == '8' and previous != 'down':
                 next_direction = 'up'
-            elif key_name == 'left' and previous != 'right':
+            elif key_name == '4' and previous != 'right':
                 next_direction = 'left'
-            elif key_name == 'down' and previous != 'up':
+            elif key_name == '5' and previous != 'up':
                 next_direction = 'down'
-            elif key_name == 'right' and previous != 'left':
+            elif key_name == '6' and previous != 'left':
                 next_direction = 'right'
             elif key_name == 'esc':
                 reason = "ESC pressed - exiting! 🚪"
@@ -63,7 +72,7 @@ def on_key_event(event) -> None:
         print(f"⚠️ Error in on_key_event: {e}")
 
 
-def fruit_transport(row: int, col: int) -> None:
+def fruit_transport(icon_col: int, icon_row: int) -> None:
     """
     Generates a new fruit by moving a target desktop icon to a random, 
     unoccupied grid coordinate.
@@ -71,70 +80,48 @@ def fruit_transport(row: int, col: int) -> None:
     global fruit, snake_body
 
     # Navigate to the target icon's original grid position
-    start_x = int(wd/2) + (col-1) * wd
-    start_y = int(ln/2) + (row-1) * ln
+    start_x, start_y = get_pixels(icon_col, icon_row)
     pag.moveTo(start_x, start_y)
+    time.sleep(0.1)
     
     while True:
-        is_valid_position = True
-        
-        # Pick random column and row for the fruit
-        grid_col = random.randint(col, c-1) 
+        # Pick random column and row for the fruit purely in the PLAYABLE zone
+        grid_col = random.randint(icon_col + 1, c-1) 
         grid_row = random.randint(0, r-1)
         
-        # Calculate actual screen coordinates
-        target_x = int(wd/2) + grid_col * wd
-        target_y = int(ln/2) + grid_row * ln
-        
         # Check against existing snake body coordinates to avoid overlaps
-        for positions in snake_body:
-            dx = abs(target_x - positions[0])
-            dy = abs(target_y - positions[1])
-            
-            # Using original proximity logic
-            if ((dx < wd and dy < 50) or (dx < 50 and dy < ln)):
-                is_valid_position = False
-                break
-                
-        if is_valid_position:
+        if (grid_col, grid_row) not in snake_body:
             break
             
     # Drag the icon to form the new fruit
-    pag.dragTo(target_x, target_y, duration=duration_drag)
-    fruit = pag.position()
+    target_x, target_y = get_pixels(grid_col, grid_row)
+    
+    try:
+        pag.mouseDown(button='left')
+        pag.moveTo(target_x, target_y, duration=duration_drag)
+    finally:
+        pag.mouseUp(button='left')
+        
+    time.sleep(0.1)
+    fruit = (grid_col, grid_row)
 
 
-def fruit_eat(direction: str, position: Tuple[int, int]) -> bool:
+
+def fruit_eat(position: Tuple[int, int]) -> bool:
     """
-    Validates if the snake's head is hovering sufficiently close to eat the fruit.
+    Validates if the snake's head perfectly aligns with the fruit on the grid.
     """
     global fruit
     if not fruit:
         return False
-        
-    dx = abs(fruit[0] - position[0])
-    dy = abs(fruit[1] - position[1])
-    
-    # Proximity hit-box logic based on direction
-    if (dx < wd and dy < 50 and direction in ['left', 'right']) or \
-       (dx < 50 and dy < ln and direction in ['up', 'down']):
-        return True    
-    return False
+    return position == fruit
 
 
-def snake_body_collission(currentx: int, currenty: int) -> bool:
+def snake_body_collission(position: Tuple[int, int]) -> bool:
     """
-    Checks if the snake has collided with its own body segments.
+    Checks if the snake has collided with its own body segments on the grid.
     """
-    for positions in snake_body:
-        dx = abs(currentx - positions[0])
-        dy = abs(currenty - positions[1])
-        
-        # Precision hit-box check to confirm collision
-        if ((dx < wd and dy < int(ln/2)) or (dx < int(wd/2) and dy < ln)):
-            return True
-            
-    return False
+    return position in snake_body
 
 
 def win(icon_count: int, snake_length: int) -> bool:
@@ -146,17 +133,27 @@ def win(icon_count: int, snake_length: int) -> bool:
 
 def win_mssg(i: int) -> Tuple[int, int]:
     """
-    Coordinates to draw out a winning message using desktop icons!
+    Coordinates to draw out a winning message ("W I N !") using desktop icons,
+    positioned dynamically in the lower right corner of the desktop grid.
     """
+    # Calculate starting offsets to position the message in the bottom right
+    # The message spans 14 columns (0 to 13) and 4 rows (0 to 3)
+    start_c = c - 14  
+    start_r = r - 4  
+    
     mssg = [
-        (6, 4), (6, 5), (6, 6), (7, 7), (8, 6), (9, 7), (10, 6), (10, 5), (10, 4), 
-        (13, 4), (13, 5), (13, 6), (13, 7), 
-        (16, 4), (16, 5), (16, 6), (16, 7), (17, 5), (18, 6), (19, 4), (19, 5), (19, 6), (19, 7), 
-        (13, 3)
+        # W
+        (start_c+2, start_r), (start_c+2, start_r+1), (start_c+2, start_r+2), 
+        (start_c+3, start_r+3), (start_c+4, start_r+2), (start_c+5, start_r+3), 
+        (start_c+6, start_r+2), (start_c+6, start_r+1), (start_c+6, start_r), 
+        # I
+        (start_c+8, start_r), (start_c+8, start_r+1), (start_c+8, start_r+2), (start_c+8, start_r+3), 
+        # N
+        (start_c+10, start_r), (start_c+10, start_r+1), (start_c+10, start_r+2), (start_c+10, start_r+3), 
+        (start_c+11, start_r+1), (start_c+12, start_r+2), 
+        (start_c+13, start_r), (start_c+13, start_r+1), (start_c+13, start_r+2), (start_c+13, start_r+3), 
     ]
-    x = int(wd/2) + mssg[i][0] * wd
-    y = int(ln/2) + mssg[i][1] * ln
-    return (x, y)
+    return get_pixels(mssg[i][0], mssg[i][1])
 
 
 # ==============================================================================
@@ -165,6 +162,7 @@ def win_mssg(i: int) -> Tuple[int, int]:
 
 def main() -> None:
     global on, next_direction, previous, snake_body, reason
+    mouse_blocker = None
     
     # ---------------------------
     # 1. Environment Initialization
@@ -194,25 +192,29 @@ def main() -> None:
     # ---------------------------
     # 2. Starting Setup
     # ---------------------------
-    column = ((icon-1) // r) + 1
-    row = icon % r if icon % r != 0 else r
+    
+    icon_col = (icon-1) // r
+    icon_row = (icon-1) % r
 
     # Move the very first fruit into play area
-    fruit_transport(row, column) 
-    icon -= 1 
+    fruit_transport(icon_col, icon_row) 
+    icon -= 1 if icon > 0 else 0
     
     # Set the start coordinate of the snake head
-    column = ((icon-1) // r) + 1
-    row = icon % r if icon % r != 0 else r
-    icon -= 1
+    icon_col = (icon-1) // r
+    icon_row = (icon-1) % r
+    icon -= 1 if icon > 0 else 0
     
-    pag.alert(text='🎮 Use arrow keys to move.\n🛑 Press ESC to exit.', title='Desktop Snake Game', button='OK')
+    pag.alert(text='🎮 Use 4-left, 6-right, 8-up, 5-down to move.\n🛑 Press ESC to exit.', title='Desktop Snake Game', button='OK')
 
-    start_x = int(wd/2) + (column-1) * wd
-    start_y = int(ln/2) + (row-1) * ln
-    snake_body = [(start_x, start_y)]
+    print("🛡️ Starting physical mouse blocking...")
+    mouse_blocker = MouseBlocker()
+    mouse_blocker.start()
+
+    snake_body = [(icon_col, icon_row)]
     
     # Emulate the start by clicking at the root coordinate
+    start_x, start_y = get_pixels(icon_col, icon_row)
     pag.click(start_x, start_y) 
     time.sleep(0.2)
     
@@ -233,36 +235,41 @@ def main() -> None:
     # ---------------------------
     try:
         while on:
+            loop_start_time = time.time()
             # Update direction logically 
             if next_direction is not None:
                 previous = next_direction
                 next_direction = None
                 
             # Compute new head coordinate
-            head_x, head_y = snake_body[0]
+            head_col, head_row = snake_body[0]
             offsets = {
-                'right': (wd, 0),
-                'left': (-wd, 0),
-                'down': (0, ln),
-                'up': (0, -ln)
+                'right': (1, 0),
+                'left': (-1, 0),
+                'down': (0, 1),
+                'up': (0, -1)
             }
             
-            dx, dy = offsets[previous]
-            new_head_x = head_x + dx
-            new_head_y = head_y + dy
+            dc, dr = offsets[previous]
+            new_head_col = head_col + dc
+            new_head_row = head_row + dr
             
             # --- Check Collision Rules ---
             
+            pixel_x, pixel_y = get_pixels(new_head_col, new_head_row)
+            
             # 1. Wall Hit Check
-            out_of_bounds_x = not (column * wd < new_head_x < (window_size[0] - 25))
-            out_of_bounds_y = not (25 < new_head_y < (r * ln))
+            out_of_bounds_x = not ((icon_col) * wd < pixel_x < (window_size[0] - BORDER_PADDING))
+            out_of_bounds_y = not (BORDER_PADDING < pixel_y < (r * ln))
             if out_of_bounds_x or out_of_bounds_y:
                 reason = "💥 Crash! The snake hit the desktop border - Game Over!"
                 on = False
                 break
             
+            new_position = (new_head_col, new_head_row)
+            
             # 2. Self Collision Check
-            if snake_body_collission(new_head_x, new_head_y):
+            if snake_body_collission(new_position):
                 reason = '💥 Ouch! The snake has entangled and eaten its own body!'
                 on = False
                 break
@@ -270,64 +277,68 @@ def main() -> None:
             # 3. Win Condition Check
             if win(ic, len(snake_body)):
                 icon = ic
-                # Secret easter egg execution if icons >= 24
-                if ic >= 24:
+                # Secret easter egg execution if icons >= EASTER_EGG_ICON_COUNT
+                if ic >= EASTER_EGG_ICON_COUNT:
                     io.move_icons()
-                    for i in range(24):
-                        column = ((icon-1) // r) + 1
-                        row = icon % r if icon % r != 0 else r
+                    for i in range(EASTER_EGG_ICON_COUNT):
+                        win_icon_col = (icon-1) // r
+                        win_icon_row = (icon-1) % r
                         
-                        target_x = int(wd/2) + (column-1) * wd
-                        target_y = int(ln/2) + (row-1) * ln
+                        target_x, target_y = get_pixels(win_icon_col, win_icon_row)
                         
                         pag.moveTo(target_x, target_y)
                         time.sleep(0.2)
                         
-                        pag.mouseDown(button='left') 
-                        final_x, final_y = win_mssg(i)
-                        pag.moveTo(final_x, final_y, duration=duration_drag)
-                        pag.mouseUp(button='left')
+                        try:
+                            pag.mouseDown(button='left') 
+                            final_x, final_y = win_mssg(i)
+                            pag.moveTo(final_x, final_y, duration=duration_drag)
+                        finally:
+                            pag.mouseUp(button='left')
                         
-                        icon -= 1
+                        icon -= 1 if icon > 0 else 0
                 reason = '🏆 VICTORY! You Have Won The Game!'
                 on = False
                 break
             
             # --- Move & Consume ---
             
-            new_position = (new_head_x, new_head_y)
-            
-            if fruit_eat(previous, new_position):
+            if fruit_eat(new_position):
                 # Consume fruit & Grow!
                 snake_body.insert(0, new_position)
                 
                 # Setup Next Fruit
-                column = ((icon-1) // r) + 1
-                row = icon % r if icon % r != 0 else r
-                fruit_transport(row, column)
-                icon -= 1 
+                icon_col = (icon-1) // r
+                icon_row = (icon-1) % r
+                fruit_transport(icon_col, icon_row)
+                icon -= 1 if icon > 0 else 0
                 
                 # Orient crosshairs back to the snake head
-                pag.moveTo(new_head_x, new_head_y)
+                pag.moveTo(pixel_x, pixel_y)
                 print(f"🍎 Yum! +1 Score. Length: {len(snake_body)} | Remaining Icons: {icon}")
             
             else:
                 # Ordinary movement (Shift tail to new head pos)
-                tail_x, tail_y = snake_body[-1]
+                tail_col, tail_row = snake_body[-1]
+                tail_x, tail_y = get_pixels(tail_col, tail_row)
                 
                 pag.moveTo(tail_x, tail_y)
                 time.sleep(0.1)
                 
                 # Visual effect of sliding the icon on desk
-                pag.mouseDown(button='left') 
-                pag.moveTo(new_head_x, new_head_y, duration=duration_drag)
-                pag.mouseUp(button='left')  
+                try:
+                    pag.mouseDown(button='left') 
+                    pag.moveTo(pixel_x, pixel_y, duration=duration_drag)
+                finally:
+                    pag.mouseUp(button='left')  
                               
                 # Logical body adjustment
                 snake_body.insert(0, new_position)
                 snake_body.pop() # Evict trailing tail pixel
 
-            time.sleep(0.2)
+            elapsed = time.time() - loop_start_time
+            if elapsed < GAME_TICK:
+                time.sleep(GAME_TICK - elapsed)
             
     except KeyboardInterrupt:
         on = False
@@ -339,10 +350,13 @@ def main() -> None:
     # 4. Graceful Cleanup
     # ---------------------------
     finally:
+        if mouse_blocker:
+            print("🛡️ Restoring physical mouse...")
+            mouse_blocker.stop()
         try:
             kb.remove_all_hotkeys()
             final_score = len(snake_body) - 1
-            max_score = len(snake_body) + icon
+            max_score = ic
             
             print("\n=========================================")
             print(f"🎯 Final Score: {final_score}/{max_score} Icons eaten")
