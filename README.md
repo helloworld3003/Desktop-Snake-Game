@@ -83,19 +83,20 @@ The game engine has been completely overhauled to remove all hardcoded constrain
 
 v1.0.2 - March 11, 2026
 * **1. Grid-Based Architecture**
-- **Grid Migration**: Switched from volatile pixel calculations to a stable `(col, row)` grid system.
-- **Coord Translation**: Added `get_pixels(col, row)` to dynamically map grid positions to absolute screen pixels.
+- Coord Translation: Added `get_pixels(col, row)` to dynamically map grid positions to absolute screen pixels.
+- Grid Migration: Switched from volatile pixel calculations to a stable `(col, row)` grid system.
 * **2. Physical Mouse Blocking Engine**
-- **New Feature**: Added `physical_mouse_blocking.py` (via `ctypes` Windows hooks) to stop physical mouse interference during gameplay.
-- **Smart Whitelist**: Allows `PyAutoGUI` injected commands to pass through unhindered.
-- **Stability Fixes**: Resolved 64-bit `OverflowError` crashes and guaranteed mouse restoration on game exit/crash.
+- New Feature: Added `physical_mouse_blocking.py` (via `ctypes` Windows hooks) to stop physical mouse interference during gameplay.
+- Smart Whitelist: Allows `PyAutoGUI` injected commands to pass through unhindered.
+- Stability Fixes: Resolved 64-bit `OverflowError` crashes and guaranteed mouse restoration on game exit/crash.
 * **3. Icon & Drag Refinements**
-- **Math Safety**: Prevented negative index bounds at game end (`icon -= 1 if icon > 0 else 0`).
+- Math Safety: Prevented negative index bounds at game end (`icon -= 1 if icon > 0 else 0`).
 * **4. Gameplay Enhancements**
-- **Collision Safety**: Fruits now safely spawn only on empty grid spaces, avoiding snake body overlaps.
-- **Simplified Checks**: Wall and self-collision detection now use lightning-fast list checks instead of pixel boundaries.
-- **Control Scheme**: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.
-- **Dynamic Animations**: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
+- Collision Safety: Fruits now safely spawn only on empty grid spaces, avoiding snake body overlaps.
+- Simplified Checks: Wall and self-collision detection now use lightning-fast list checks instead of pixel boundaries.
+- Control Scheme: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.
+- Dynamic Animations: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
+
 
 
 
