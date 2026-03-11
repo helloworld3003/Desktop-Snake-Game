@@ -24,46 +24,38 @@ def medium_icons():
     # Right-click on desktop
     pag.rightClick(screen_width-1, 1)  # Right-click at the top-right corner of the desktop
     time.sleep(0.1)
-    pag.press('alt')  # Open context menu with keyboard
+    pag.hotkey('alt', 'v')  # Open View submenu  
     time.sleep(0.1)
-    pag.press('v')  # Open View submenu
-    time.sleep(0.1)    
-    pag.press('m')  # Select medium icons
+    pag.hotkey('alt', 'm')  # Select medium icons
 
 def auto_arrange():
     screen_width, screen_height = pag.size()       
     # Right-click on desktop
     pag.rightClick(screen_width-1, 1)  # Right-click at the top-right corner of the desktop
     time.sleep(0.1)
-    pag.press('alt')  # Open context menu with keyboard
-    time.sleep(0.1)
-    pag.press('v')  # Open View submenu
+    pag.hotkey('alt', 'v')  # Open View submenu  
     time.sleep(0.1)    
-    # Look for "Auto arrange icons" option
-    pag.press('a')  # Toggle auto arrange icons
+    pag.hotkey('alt', 'a')  # Toggle auto arrange icons
 
 def align_icons_to_grid():
     screen_width, screen_height = pag.size()       
     # Right-click on desktop
     pag.rightClick(screen_width-1, 1)  # Right-click at the top-right corner of the desktop
     time.sleep(0.1)
-    pag.press('alt')  # Open context menu with keyboard
+    pag.hotkey('alt', 'v')  # Open View submenu  
     time.sleep(0.1)
-    pag.press('v')  # Open View submenu    
-    time.sleep(0.1)
-    # Look for "Align icons to grid" option
-    pag.press('i')  # Toggle align icons to grid
+    pag.hotkey('alt', 'i')  # Toggle align icons to grid
 
 def move_icons():
-        if is_auto_arrange_enabled()=='1075839524': # Check if auto arrange is enabled
-            auto_arrange()
-            auto_arrange()
-        elif is_auto_arrange_enabled()=='1075839520':
-                auto_arrange()
-                align_icons_to_grid() 
-                auto_arrange()
-        else:
-            auto_arrange()
+    if is_auto_arrange_enabled()=='1075839524': # Check if auto arrange is enabled
+        auto_arrange()
+        auto_arrange()
+    elif is_auto_arrange_enabled()=='1075839520':
+        auto_arrange()
+        align_icons_to_grid() 
+        auto_arrange()
+    else:
+        auto_arrange()
 
 
 def main():
