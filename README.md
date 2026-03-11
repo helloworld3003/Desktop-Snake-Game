@@ -4,10 +4,11 @@ A highly experimental, Python-based Snake game that literally uses your Windows 
 
 Instead of drawing pixels on a canvas, this script uses `pyautogui` to physically drag your desktop shortcuts around the screen. If you manage to eat enough icons, you might even trigger a custom pixel-art Easter egg!
 
-**📸 Peace of Mind Feature:** Don't worry about losing your carefully arranged desktop layout! Before the game auto-arranges anything, it automatically takes a screenshot of your screen and saves it right to your Desktop as `orignal_desktop.png` so you can easily restore your layout later.
+**Gameplay**
+https://github.com/user-attachments/assets/174f84a1-ccaf-4fec-8917-75a5817e8738
 
 
-https://github.com/user-attachments/assets/0d1b63e7-06c4-4f8f-92ed-3a656e836d15
+**📸 Peace of Mind Feature:** Don't worry about losing your carefully arranged desktop layout! Before the game auto-arranges anything, it automatically takes a screenshot of your screen and saves it right to your Desktop as `orignal_desktop_time.png` so you can easily restore your layout later.
 
 
 ## ⚠️ Assumptions & Requirements
@@ -80,24 +81,21 @@ v1.0.1 - March 3, 2026
 The game engine has been completely overhauled to remove all hardcoded constraints, replacing fixed values with dynamic variables. The grid math now automatically scales to flawlessly match any screen resolution and Windows DPI setting. This is powered by a newly added `grid_size.py` utility, which directly queries the hidden Windows `SysListView32` to extract your true physical desktop rendering metrics. Alongside these structural upgrades, the core codebase and terminal outputs have been polished and decorated for a cleaner, more intuitive experience.
 
 v1.0.2 - March 11, 2026
-
-## 1. Grid-Based Architecture
+* **1. Grid-Based Architecture**
 * **Grid Migration**: Switched from volatile pixel calculations to a stable `(col, row)` grid system.
 * **Coord Translation**: Added `get_pixels(col, row)` to dynamically map grid positions to absolute screen pixels.
-
-## 2. Physical Mouse Blocking Engine
+* **2. Physical Mouse Blocking Engine**
 * **New Feature**: Added `physical_mouse_blocking.py` (via `ctypes` Windows hooks) to stop physical mouse interference during gameplay.
 * **Smart Whitelist**: Allows `PyAutoGUI` injected commands to pass through unhindered.
 * **Stability Fixes**: Resolved 64-bit `OverflowError` crashes and guaranteed mouse restoration on game exit/crash.
-
-## 3. Icon & Drag Refinements
+* **3. Icon & Drag Refinements**
 * **Math Safety**: Prevented negative index bounds at game end (`icon -= 1 if icon > 0 else 0`).
-
-## 4. Gameplay Enhancements
+* **4. Gameplay Enhancements**
 * **Collision Safety**: Fruits now safely spawn only on empty grid spaces, avoiding snake body overlaps.
 * **Simplified Checks**: Wall and self-collision detection now use lightning-fast list checks instead of pixel boundaries.
 * **Control Scheme**: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.
 * **Dynamic Animations**: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
+
 
 
 
