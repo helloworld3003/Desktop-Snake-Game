@@ -5,6 +5,7 @@ A highly experimental, Python-based Snake game that literally uses your Windows 
 Instead of drawing pixels on a canvas, this script uses `pyautogui` to physically drag your desktop shortcuts around the screen. If you manage to eat enough icons, you might even trigger a custom pixel-art Easter egg!
 
 **Gameplay**
+
 https://github.com/user-attachments/assets/174f84a1-ccaf-4fec-8917-75a5817e8738
 
 
@@ -95,6 +96,7 @@ v1.0.2 - March 11, 2026
 * **Simplified Checks**: Wall and self-collision detection now use lightning-fast list checks instead of pixel boundaries.
 * **Control Scheme**: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.
 * **Dynamic Animations**: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
+
 
 
 
