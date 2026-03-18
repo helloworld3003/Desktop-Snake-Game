@@ -22,35 +22,9 @@ Because this game interacts directly with your OS GUI, it requires a specific en
 ## 🎮 How to Play (For Gamers)
 If you just want to play the game without messing with Python code:
 1. Navigate to the **[Releases](#)** tab on the right side of this GitHub page.
-2. Download the latest `snake_game_desktop.exe` file.
+2. Download the latest `snake_game_desktop.exe` or the `zip file .7z` file.
 3. Double-click the `.exe` to launch.
-4. **Controls:** Use 4-left, 6-right, 8-up, 5-down to move.\n🛑 Press ESC to exit.
-
-## 💻 How to Install (For Developers)
-If you want to view the code, debug, or modify the game:
-
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/YourUsername/Desktop-Snake-Game.git](https://github.com/YourUsername/Desktop-Snake-Game.git)
-   ```
-2. Navigate into the project directory:
-   ```bash
-   cd Desktop-Snake-Game
-   ```
-3. Create a virtual environment (recommended):
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate
-   ```
-4. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-5. Run the game:
-   ```bash
-   python snake_game_desktop.py
-   ```
-
+4. **Controls:** 🎮 Controls:\n- WASD or Arrow Keys: Move\n- P: Pause/Resume\n- M: Mute/Unmute\n- ESC: Exit
 
 
 ## 📂 File Structure
@@ -78,7 +52,7 @@ Because this game physically drags your desktop icons and relies on specific OS 
 To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
 
 ### 🚀 Latest Updates
-v1.0.1 - March 3, 2026
+v1.0.1 - March 3, 2026<br><br>
 The game engine has been completely overhauled to remove all hardcoded constraints, replacing fixed values with dynamic variables. The grid math now automatically scales to flawlessly match any screen resolution and Windows DPI setting. This is powered by a newly added `grid_size.py` utility, which directly queries the hidden Windows `SysListView32` to extract your true physical desktop rendering metrics. Alongside these structural upgrades, the core codebase and terminal outputs have been polished and decorated for a cleaner, more intuitive experience.
 
 v1.0.2 - March 11, 2026
@@ -97,7 +71,7 @@ v1.0.2 - March 11, 2026
        Control Scheme: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.<br>
        Dynamic Animations: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
 
-v1.0.3 March 18, 2026<br>
+v1.0.3 - March 18, 2026<br><br>
 **1. Highscore & Persistence**: Added a `persistent highscore system` and automatic desktop snapshots, all stored in a dedicated folder: Desktop/snake_game_desktop/.<br>
 **2. Standardized Controls**: Reverted movement keys from experimental mappings back to the standard `Arrow Keys` for a more intuitive experience.<br>
 **3. Enhanced Audio**: Integrated `custom sound effects (asynchronous .wav files)` and successfully suppressed annoying Windows "exclamation" dings.<br>
