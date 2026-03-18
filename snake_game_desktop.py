@@ -1,6 +1,11 @@
+from winsound import Beep
 import os
+import sys
+import json
 import time
 import random
+import winsound
+import datetime
 from typing import Tuple, List, Optional
 
 import keyboard as kb
@@ -9,6 +14,7 @@ import pyautogui as pag
 import grid_size
 import icon_organizer as io
 from physical_mouse_blocking import MouseBlocker
+import mouse_hide
 
 # ==============================================================================
 # ======================== DESKTOP SNAKE GAME ==================================
@@ -16,14 +22,14 @@ from physical_mouse_blocking import MouseBlocker
 
 # --- Game Configuration & Grid Setup ---
 window_size = pag.size()     # Current screen resolution
-duration_drag = 0.3          # Mouse drag duration for moving icons
+duration_drag = 0.2          # Mouse drag duration for moving icons
 wd = 95                      # Initial cell width
 ln = 130                     # Initial cell length
 r = 8                        # Total grid rows
 c = 20                       # Total grid columns
 BORDER_PADDING = 25          # Padding from screen edges
 EASTER_EGG_ICON_COUNT = 24   # Icon count to trigger Easter Egg
-GAME_TICK = 0.3              # Fixed interval (in seconds) for each game frame
+GAME_TICK = duration_drag              # Fixed interval (in seconds) for each game frame
 
 # Retrieve accurate spacing based on screen metrics
 wd, ln, r, c = grid_size.get_true_desktop_spacing(window_size)
@@ -35,11 +41,89 @@ on = True                    # Master flag for the main game loop
 previous = 'right'           # Tracks the current movement direction
 next_direction = None        # Queue for upcoming direction input
 reason = ''                  # Descriptive reason for exiting the game
+paused = False               # Flag for pausing the game
+mute = False                 # Flag for muting the game
+# ==============================================================================
+# ======================== HIGH SCORE SYSTEM ===================================
+# ==============================================================================
+
+HIGH_SCORE_FILE = os.path.join(os.path.expanduser("~"), "Desktop", "snake_game_desktop", "high_scores.json")
+MAX_LEADERBOARD_ENTRIES = 5
+
+def load_scores() -> list:
+    """Load high scores from JSON file. Returns a list of score dicts."""
+    try:
+        if os.path.exists(HIGH_SCORE_FILE):
+            with open(HIGH_SCORE_FILE, 'r') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def save_score(score: int, max_score: int, difficulty: str, won: bool) -> list:
+    """
+    Append a new score entry, sort descending, keep top MAX_LEADERBOARD_ENTRIES,
+    persist to disk and return the updated leaderboard.
+    """
+    difficulty_score={'easy':5,'medium':10,'hard':20}
+    # pct=round((score*max_score * difficulty_score[difficulty]*100)/((r*c*0.7)**2*difficulty_score['hard'])) if max_score else 0
+    diff_val = difficulty_score.get(difficulty, 5)
+    pct = round((score / max_score) * 100 * (diff_val / difficulty_score['hard'])) if max_score else 0
+    scores = load_scores()
+    entry = {
+        'score': score,
+        'max': max_score,
+        'pct': pct if not won else pct+20 ,
+        'difficulty': difficulty,
+        'won': won,
+        'date': datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),
+    }
+    scores.append(entry)
+    scores.sort(key=lambda e: (e['pct'], e['score']), reverse=True)
+    scores = scores[:MAX_LEADERBOARD_ENTRIES]
+    try:
+        with open(HIGH_SCORE_FILE, 'w') as f:
+            json.dump(scores, f, indent=2)
+    except Exception as ex:
+        print(f'⚠️ Could not save high score: {ex}')
+    return scores
+
+def format_leaderboard(scores: list, highlight_score: int) -> str:
+    """Return a human-readable leaderboard string for display in a dialog."""
+    if not scores:
+        return 'No scores recorded yet.'
+    lines = ['🏆  TOP SCORES  🏆', '-' * 36]
+    medals = ['🥇', '🥈', '🥉']
+    for i, e in enumerate(scores):
+        medal = medals[i] if i < 3 else f' {i+1}.'
+        crown = ' ◀ YOU' if e['score'] == highlight_score and i == next(
+            (j for j, s in enumerate(scores) if s['score'] == highlight_score), -1) else ''
+        won_tag = ' 🏆' if e['won'] else ''
+        lines.append(
+            f"{medal} {e['score']:>3}/{e['max']:<3} ({e['pct']:>3}%)  "
+            f"{e['difficulty']:<6}  {e['date']}{won_tag}{crown}"
+        )
+    return '\n'.join(lines)
 
 # ==============================================================================
 # ======================== CORE FUNCTIONS ======================================
 # ==============================================================================
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(base_path, relative_path)
 
+def sound(path: str):
+    """Play a sound effect when the snake eats a fruit."""
+    if mute:
+        return
+    sound_file = resource_path(f'sounds\\{path}')
+    winsound.PlaySound(sound_file, winsound.SND_FILENAME | winsound.SND_ASYNC)
+    
 def get_pixels(col: int, row: int) -> Tuple[int, int]:
     """Convert abstract grid coordinate to precise desktop screen pixel coordinates."""
     return int(wd/2) + col * wd, int(ln/2) + row * ln
@@ -50,24 +134,37 @@ def on_key_event(event) -> None:
     Handle keyboard events for direction changes smoothly.
     Listens for arrow keys and ESC to update the movement queue.
     """
-    global next_direction, on, previous, reason
+    global next_direction, on, previous, reason, paused, mute
     
     try:
         # Convert to string and lowercase to avoid CapsLock/Shift bugs
         key_name = str(event.name).lower()
         
         if event.event_type == 'down':
-            if key_name == '8' and previous != 'down':
+            if (key_name == 'up' or key_name == 'w') and previous != 'down':
                 next_direction = 'up'
-            elif key_name == '4' and previous != 'right':
+                sound('keyboard_click.wav')
+            elif (key_name == 'left' or key_name == 'a') and previous != 'right':
                 next_direction = 'left'
-            elif key_name == '5' and previous != 'up':
+                sound('keyboard_click.wav')
+            elif (key_name == 'down' or key_name == 's') and previous != 'up':
                 next_direction = 'down'
-            elif key_name == '6' and previous != 'left':
+                sound('keyboard_click.wav')
+            elif (key_name == 'right' or key_name == 'd') and previous != 'left':
                 next_direction = 'right'
+                sound('keyboard_click.wav')
+            elif key_name == 'p':
+                paused = not paused
+                print("⏸️ Game Paused" if paused else "▶️ Game Resumed")
+                sound('keyboard_click.wav')
             elif key_name == 'esc':
                 reason = "ESC pressed - exiting! 🚪"
                 on = False
+                sound('keyboard_click.wav')
+            elif key_name == 'm':
+                mute = not mute
+                print("🔇 Game Muted" if mute else "🔊 Game Unmuted")
+                sound('keyboard_click.wav')
     except Exception as e:
         print(f"⚠️ Error in on_key_event: {e}")
 
@@ -161,9 +258,11 @@ def win_mssg(i: int) -> Tuple[int, int]:
 # ==============================================================================
 
 def main() -> None:
-    global on, next_direction, previous, snake_body, reason
+    global on, next_direction, previous, snake_body, reason, duration_drag, GAME_TICK
     mouse_blocker = None
-    
+    difficulty = 'unknown'  # Safe default if game exits before difficulty prompt
+    ic = 0                  # Safe default if init fails before ic is assigned
+
     # ---------------------------
     # 1. Environment Initialization
     # ---------------------------
@@ -174,13 +273,21 @@ def main() -> None:
         
         # Take a snapshot of the original layout for backup safety
         timestamp = time.strftime("%H_%M_%S", time.localtime())
-        desktop_path = os.path.join(os.path.expanduser("~"), "Desktop", f"original_desktop_{timestamp}.png") 
+        os.makedirs(os.path.join(os.path.expanduser("~"), "Desktop", "snake_game_desktop"), exist_ok=True)
+        desktop_path = os.path.join(os.path.expanduser("~"), "Desktop", "snake_game_desktop", f"original_desktop_{timestamp}.png") 
         pag.screenshot(desktop_path)
         
         io.move_icons()     # Align icons neatly
-        ic = int(io.scan_desktop('Desktop Snake Game')) 
+        ic = int(io.scan_desktop('Desktop Snake Game'))  
         icon = ic
-        
+        difficulty=pag.confirm(text='Choose Difficulty', title='Desktop Snake Game', buttons=['easy','medium','hard']) or 'unknown'
+        if difficulty=='easy':
+            duration_drag=0.3
+        elif difficulty=='medium':
+            duration_drag=0.2
+        elif difficulty=='hard':
+            duration_drag=0.1
+        GAME_TICK = duration_drag  # Sync game tick to chosen difficulty
         if not (2 <= ic < int(r * c * 0.7)):
             print("❌ Invalid number of icons on the desktop. Exiting.")
             return
@@ -192,7 +299,6 @@ def main() -> None:
     # ---------------------------
     # 2. Starting Setup
     # ---------------------------
-    
     icon_col = (icon-1) // r
     icon_row = (icon-1) % r
 
@@ -205,14 +311,15 @@ def main() -> None:
     icon_row = (icon-1) % r
     icon -= 1 if icon > 0 else 0
     
-    pag.alert(text='🎮 Use 4-left, 6-right, 8-up, 5-down to move.\n🛑 Press ESC to exit.', title='Desktop Snake Game', button='OK')
+    
+    pag.alert(text='🎮 Controls:\n- WASD or Arrow Keys: Move\n- P: Pause/Resume\n- M: Mute/Unmute\n- ESC: Exit', title='Desktop Snake Game', button='OK')
 
-    print("🛡️ Starting physical mouse blocking...")
+    print("🛡️ Starting physical mouse blocking and cursor hiding...")
     mouse_blocker = MouseBlocker()
     mouse_blocker.start()
+    mouse_hide.hide_cursor() # Hide the cursor
 
     snake_body = [(icon_col, icon_row)]
-    
     # Emulate the start by clicking at the root coordinate
     start_x, start_y = get_pixels(icon_col, icon_row)
     pag.click(start_x, start_y) 
@@ -225,7 +332,7 @@ def main() -> None:
     print("=========================================\n")
     
     try:
-        kb.on_press(on_key_event) # Listen for key events
+        kb.hook(on_key_event, suppress=True) # Listen & suppress keys to avoid Windows ding
     except Exception as e:
         print(f"❌ Error setting up keyboard listener: {e}")
         return
@@ -236,6 +343,11 @@ def main() -> None:
     try:
         while on:
             loop_start_time = time.time()
+
+            if paused:
+                time.sleep(0.1)
+                continue
+
             # Update direction logically 
             if next_direction is not None:
                 previous = next_direction
@@ -249,11 +361,12 @@ def main() -> None:
                 'down': (0, 1),
                 'up': (0, -1)
             }
-            
+
             dc, dr = offsets[previous]
             new_head_col = head_col + dc
             new_head_row = head_row + dr
-            
+            # winsound.PlaySound(Beep(1000,100), winsound.SND_FILENAME | winsound.SND_ASYNC)
+
             # --- Check Collision Rules ---
             
             pixel_x, pixel_y = get_pixels(new_head_col, new_head_row)
@@ -264,6 +377,7 @@ def main() -> None:
             if out_of_bounds_x or out_of_bounds_y:
                 reason = "💥 Crash! The snake hit the desktop border - Game Over!"
                 on = False
+                sound('lose.wav')
                 break
             
             new_position = (new_head_col, new_head_row)
@@ -272,11 +386,14 @@ def main() -> None:
             if snake_body_collission(new_position):
                 reason = '💥 Ouch! The snake has entangled and eaten its own body!'
                 on = False
+                sound('lose.wav')
                 break
 
             # 3. Win Condition Check
             if win(ic, len(snake_body)):
+                reason = '🏆 VICTORY! You Have Won The Game!'
                 icon = ic
+                sound('win.wav')
                 # Secret easter egg execution if icons >= EASTER_EGG_ICON_COUNT
                 if ic >= EASTER_EGG_ICON_COUNT:
                     io.move_icons()
@@ -287,8 +404,10 @@ def main() -> None:
                         target_x, target_y = get_pixels(win_icon_col, win_icon_row)
                         
                         pag.moveTo(target_x, target_y)
-                        time.sleep(0.2)
-                        
+                        time.sleep(0.1)
+                        if not on:  # ESC was pressed; on_key_event already set on=False
+                            break
+
                         try:
                             pag.mouseDown(button='left') 
                             final_x, final_y = win_mssg(i)
@@ -297,13 +416,13 @@ def main() -> None:
                             pag.mouseUp(button='left')
                         
                         icon -= 1 if icon > 0 else 0
-                reason = '🏆 VICTORY! You Have Won The Game!'
                 on = False
                 break
             
             # --- Move & Consume ---
             
             if fruit_eat(new_position):
+                sound('fruit_eat.wav')
                 # Consume fruit & Grow!
                 snake_body.insert(0, new_position)
                 
@@ -350,27 +469,38 @@ def main() -> None:
     # 4. Graceful Cleanup
     # ---------------------------
     finally:
+        # Unhook keyboard FIRST and unconditionally — if the suppressing hook
+        # isn't removed here, Windows keeps blocking all keystrokes after exit.
+        time.sleep(0.05)  # Let any in-flight suppressed key event drain
+        kb.unhook_all()
+
         if mouse_blocker:
-            print("🛡️ Restoring physical mouse...")
+            print("🛡️ Restoring physical mouse and cursor...")
             mouse_blocker.stop()
+            mouse_hide.show_cursor() # Show the cursor
         try:
-            kb.remove_all_hotkeys()
+            max_score = ic-1
             final_score = len(snake_body) - 1
-            max_score = ic
-            
+            won = win(ic, len(snake_body))
+
             print("\n=========================================")
             print(f"🎯 Final Score: {final_score}/{max_score} Icons eaten")
             print(f"📝 Reason: {reason}")
             print("=========================================\n")
-            
-            if win(ic, len(snake_body)):
-                pag.alert(text='🏆 Congratulations! You have consumed all the icons on your desktop!', title='Desktop Snake Game', button='OK')
+
+            # --- Save & display high scores ---
+            updated_scores = save_score(final_score, max_score, difficulty, won)
+            leaderboard_text = format_leaderboard(updated_scores, final_score)
+
+            if won:
+                msg = f'🏆 Congratulations! You consumed ALL icons!\n\n{leaderboard_text}'
+                pag.alert(text=msg, title='Desktop Snake Game - VICTORY!', button='OK')
                 pag.click(1, 1)
                 pag.hotkey('ctrl', 'a')
             else:
-                msg = f"{reason}\nFinal Score: {final_score}/{max_score}"
+                msg = f"{reason}\nFinal Score: {final_score}/{max_score}\n\n{leaderboard_text}"
                 pag.alert(text=msg, title='Desktop Snake Game', button='OK')
-            
+
                 # Standardize arrangement before abandoning UI
                 io.open_desktop()
                 io.move_icons()
