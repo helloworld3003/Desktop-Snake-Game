@@ -48,13 +48,16 @@ def align_icons_to_grid():
 
 def move_icons():
     if is_auto_arrange_enabled()=='1075839524': # Check if auto arrange is enabled
+        time.sleep(1.5)
         auto_arrange()
         auto_arrange()
     elif is_auto_arrange_enabled()=='1075839520':
+        time.sleep(1.5)
         auto_arrange()
         align_icons_to_grid() 
         auto_arrange()
     else:
+        time.sleep(1.5)
         auto_arrange()
 
 
