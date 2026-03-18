@@ -97,7 +97,7 @@ v1.0.2 - March 11, 2026
        Control Scheme: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.<br>
        Dynamic Animations: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
 
-v1.0.3
+v1.0.3 March 18, 2026<br>
 **1. Highscore & Persistence**: Added a `persistent highscore system` and automatic desktop snapshots, all stored in a dedicated folder: Desktop/snake_game_desktop/.<br>
 **2. Standardized Controls**: Reverted movement keys from experimental mappings back to the standard `Arrow Keys` for a more intuitive experience.<br>
 **3. Enhanced Audio**: Integrated `custom sound effects (asynchronous .wav files)` and successfully suppressed annoying Windows "exclamation" dings.<br>
