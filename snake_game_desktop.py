@@ -277,8 +277,14 @@ def main() -> None:
         desktop_path = os.path.join(os.path.expanduser("~"), "Desktop", "snake_game_desktop", f"original_desktop_{timestamp}.png") 
         pag.screenshot(desktop_path)
         
-        io.move_icons()     # Align icons neatly
-        ic = int(io.scan_desktop('Desktop Snake Game'))  
+        print("Saving current layout...")
+        my_layout = io.save_layout()
+        time.sleep(0.1)
+        io.set_auto_arrange(True)
+        time.sleep(0.1)
+        io.set_auto_arrange(False)
+        time.sleep(0.1)
+        ic = int(io.count_icons())  
         icon = ic
         difficulty=pag.confirm(text='Choose Difficulty', title='Desktop Snake Game', buttons=['easy','medium','hard']) or 'unknown'
         if difficulty=='easy':
@@ -396,7 +402,10 @@ def main() -> None:
                 sound('win.wav')
                 # Secret easter egg execution if icons >= EASTER_EGG_ICON_COUNT
                 if ic >= EASTER_EGG_ICON_COUNT:
-                    io.move_icons()
+                    io.set_auto_arrange(True)
+                    time.sleep(0.5)
+                    io.set_auto_arrange(False)
+                    time.sleep(0.5)
                     for i in range(EASTER_EGG_ICON_COUNT):
                         win_icon_col = (icon-1) // r
                         win_icon_row = (icon-1) % r
@@ -497,13 +506,22 @@ def main() -> None:
                 pag.alert(text=msg, title='Desktop Snake Game - VICTORY!', button='OK')
                 pag.click(1, 1)
                 pag.hotkey('ctrl', 'a')
+                pag.confirm('Do you Want to restore the layout?', title='Desktop Snake Game - VICTORY!', buttons=['Yes', 'No'])
+                if pag.confirm == 'Yes':
+                    io.restore_layout(my_layout)
             else:
                 msg = f"{reason}\nFinal Score: {final_score}/{max_score}\n\n{leaderboard_text}"
                 pag.alert(text=msg, title='Desktop Snake Game', button='OK')
-
+                pag.confirm('Do you Want to play again?', title='Desktop Snake Game - VICTORY!', buttons=['Yes', 'No'])
+                if pag.confirm == 'Yes':
+                    main()
                 # Standardize arrangement before abandoning UI
                 io.open_desktop()
-                io.move_icons()
+                io.set_auto_arrange(True)
+                time.sleep(0.1)
+                io.set_auto_arrange(False)
+                time.sleep(0.1)
+                io.restore_layout(my_layout)
         except Exception as e:
             print(f"Cleanup non-fatal error: {e}")
 
