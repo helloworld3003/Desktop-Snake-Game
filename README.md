@@ -77,9 +77,10 @@ v1.0.3 - March 18, 2026<br><br>
 **3. Enhanced Audio**: Integrated `custom sound effects (asynchronous .wav files)` and successfully suppressed annoying Windows "exclamation" dings.<br>
 **4. Cursor Protection**: Implemented `cursor hiding mechanism` for seamless gameplay(Cursor is hidden during gameplay and restored when the game is exited). 
 
-v1.0.4 - 
-
-
+v1.0.4 - March 21, 2026 <br><br>
+* Added Automatic Icon Restore
+* Make it very fast and unfailing
+* Working flawlessly
 
 
 
