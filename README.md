@@ -9,14 +9,12 @@ Instead of drawing pixels on a canvas, this script uses `pyautogui` to physicall
 https://github.com/user-attachments/assets/174f84a1-ccaf-4fec-8917-75a5817e8738
 
 
-**📸 Peace of Mind Feature:** Don't worry about losing your carefully arranged desktop layout! Before the game auto-arranges anything, it automatically takes a screenshot of your screen and saves it right to your Desktop as `orignal_desktop_time.png` so you can easily restore your layout later.
+**📸 Peace of Mind Feature:** Don't worry about losing your carefully arranged desktop layout! Before the game auto-arranges anything, it automatically saves the desktop layout. At the end it automatically arranges to your original layout.
 
 
 ## ⚠️ Assumptions & Requirements
 Because this game interacts directly with your OS GUI, it requires a specific environment to run correctly:
 * **Operating System:** Windows 
-* **Display Resolution:** Any(Automatically detects and adjusts)
-* **Icon Settings:** Medium Icons, Auto-arrange disabled during gameplay, Align to grid.
 * **Settings:** "Drag to share" or "Single-click to open an item" must be turned OFF in Windows settings. Rainmeter is not running.
 
 ## 🎮 How to Play (For Gamers)
@@ -29,8 +27,10 @@ If you just want to play the game without messing with Python code:
 
 ## 📂 File Structure
 * `snake_game_desktop.py`: The main game loop, input handling, and grid math.
-* `icon_organizer.py`: A custom supporting module that prepares the desktop by aligning and organizing icons before the game starts.
-* `requirements.txt`: Python package dependencies (primarily `pyautogui` and `keyboard`).
+* `icon_organizer.py`: A custom supporting module that prepares the desktop by aligning and organizing icons before the game starts and also restores layput.
+* `mouse_hide.py` : Supporting module for cursor hifing for seamless gameplay.
+* `physical_mouse_blocking.py` : Supporting module for blocking accidental mouse and keyboard clicks.
+* `grid_size.py` : Supporting module for automatically finding desktop grid size, dpi, column, row size.
 
 ## 🏆 Winning the Game
 
@@ -77,7 +77,7 @@ v1.0.3 - March 18, 2026<br><br>
 **3. Enhanced Audio**: Integrated `custom sound effects (asynchronous .wav files)` and successfully suppressed annoying Windows "exclamation" dings.<br>
 **4. Cursor Protection**: Implemented `cursor hiding mechanism` for seamless gameplay(Cursor is hidden during gameplay and restored when the game is exited). 
 
-
+v1.0.4 - 
 
 
 
