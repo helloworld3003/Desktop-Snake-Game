@@ -1,55 +1,86 @@
-# 🐍 Desktop Snake Game
 
-A highly experimental, Python-based Snake game that literally uses your Windows desktop icons as the snake! Eat icons to grow longer, and navigate your desktop grid to win. 
+# <img width="50" height="50"  align="left" alt="icon" src="https://github.com/user-attachments/assets/49c3d638-2334-4f03-99ed-1896ac9ef359" /> Desktop Snake Game
+Welcome to **Desktop Snake Game**! This is a **custom made, highly experimental** game that transforms your boring Windows desktop into a fully playable game of Snake. 
 
-Instead of drawing pixels on a canvas, this script uses `pyautogui` to physically drag your desktop shortcuts around the screen. If you manage to eat enough icons, you might even trigger a custom pixel-art Easter egg!
-
-**Gameplay**
-
-https://github.com/user-attachments/assets/174f84a1-ccaf-4fec-8917-75a5817e8738
+Instead of a traditional windowed game, this script uses **PyAutoGUI** to physically drag your actual desktop shortcuts around the screen! Your Desktop icons *are* the snake! 
 
 
-**📸 Peace of Mind Feature:** Don't worry about losing your carefully arranged desktop layout! Before the game auto-arranges anything, it automatically saves the desktop layout. At the end it automatically arranges to your original layout.
 
 
-## ⚠️ Assumptions & Requirements
-Because this game interacts directly with your OS GUI, it requires a specific environment to run correctly:
-* **Operating System:** Windows 
-* **Settings:** "Drag to share" or "Single-click to open an item" must be turned OFF in Windows settings. Rainmeter is not running.
+---
 
-## 🎮 How to Play (For Gamers)
-If you just want to play the game without messing with Python code:
-1. Navigate to the **[Releases](#)** tab on the right side of this GitHub page.
-2. Download the latest `snake_game_desktop.exe` or the `zip file .7z` file.
-3. Double-click the `.exe` to launch.
-4. **Controls:** 🎮 Controls:\n- WASD or Arrow Keys: Move\n- P: Pause/Resume\n- M: Mute/Unmute\n- ESC: Exit
+## 🚀 Quick Overview
+
+**Desktop Snake Game** takes control of your Windows desktop to play Snake using your shortcuts. 
+
+- **The Snake:** Made entirely of your desktop shortcuts and icons!
+- **The Gameplay:** Use `W, A, S, D` or `Arrow Keys` to slither around the desktop grid and "eat" other icons to grow longer. Use `esc` to exit the game, `p` to pause and `m` to mute.
+- **The Magic:** We use `pyautogui` to rapidly physically drag icons across the screen. 
+- **The Safety:** Before any chaos begins, the game automatically takes a screenshot and **saves your precise desktop layout**. When you finish/quit, it automatically arranges everything back to your original layout. No icons lost!
+- **The UI:** A beautiful, custom-made `HUD overlay` that displays your current score, remaining icons, a glowing fruit box, and a "Ready-Set-Go!" countdown.
+- **The Sound:** A custom-made sound system that `plays sound effects` for eating fruits, growing longer, and winning the game.
+
+---
+## Gameplay(v1.0.3)
+https://github.com/user-attachments/assets/6516ae1b-2b29-497d-8e8d-ff5a626f769c
+
+## 🧠 Detailed Breakdown
+
+If you're curious about how this wizardry works under the hood, here is the detailed breakdown of the components:
+
+### 1. The Core Engine (`snake_game_desktop.py` & `grid_size.py`)
+This is the heart of the game. It controls the game loop, snake mechanics (movement, collisions, and eating), and keyboard listeners. 
+- **Grid Calculation (`grid_size.py`):** Automatically detects your screen resolution to calculate the perfect grid spacing so the icons snap perfectly as they move.
+- **Physical Dragging:** The game physically selects an icon and uses `pyautogui.moveTo()` with a calculated drag duration to slide it across your wallpaper to its new position.
+
+### 2. Desktop Organization & Safety (`icon_organizer.py`)
+Moving users' icons is dangerous, so this module ensures safety.
+- **Auto-Save Layout:** Uses Windows APIs (`win32gui`) to read the exact `(x, y)` coordinate of every shortcut *before* the game starts. 
+- **Auto-Restore Layout:** When the game ends (win, lose, or quit), restoring your shortcuts to their exact starting pixels. 
+
+### 3. Attractive UI & Hud (`hud_overlay.py` & `leaderboard_ui.py`)
+Who says a desktop game can't look incredibly polished? 
+- **HUD Overlay:** A transparent, click-through overlay built in Tkinter that draws the game boundary wall, displays your current score, remaining icons, a glowing icon box, and a "Ready-Set-Go!" countdown.
+- **Leaderboards:** A gorgeous custom Tkinter UI that pops up post-game to show your high scores, tracking the longest snake you've ever built!
+
+### 4. Input Blocking (`physical_mouse_blocking.py` & `mouse_hide.py`)
+- To prevent you from accidentally clicking and breaking the dragging events, we employ Windows Hooks to block physical mouse movements during gameplay, and entirely hide the cursor from the screen for total immersion.
+
+### 5. Sound System (`sounds` folder)
+- A custom-made sound system that plays sound effects for eating fruits, growing longer, and winning the game.
+
+### 🎁 The Secret Easter Egg!
+If you are skilled enough to manage to eat a massive amount of your icons (at least 23 icons!), you might even trigger a **custom pixel-art Easter egg!** The game will use your icons to draw out a massive "WIN!" message directly on your wallpaper. 
+
+---
+
+## 🎮 Play and Test It!
+
+I highly encourage you to pull this repository and give it a try on your PC!
+1. Ensure you have a good handful of desktop icons and shortcuts (at least 5-10) lying around.
+2. Download the latest release `snake_game_desktop.exe` from the [Releases](https://github.com/helloworld3003/Desktop-Snake-Game/releases) page.
+3. Run `snake_game_desktop.exe`
+4. Choose your difficulty and watch your icons come to life! 
+
+**Let me know how it goes!** I am looking for playtesters to see how well it works on different monitor resolutions and scaling factors. 
+
+---
+
+## 🛠️ Suggest Features & Improvements
+
+Since this is highly experimental, there's always room to grow! If you have any feedback or ideas, please open an Issue or a Pull Request! 
+Some ideas for the future:
+- **Obstacles:** Designate some apps/files (like the Recycle Bin) as "bombs" that you have to avoid.
+- **Multi-monitor support:** Slither your app icons from one screen to the next!
+- **Mac/Linux Ports:** Currently relies on Win32 UI APIs. Help me bring it to macOS and Linux!
+
+---
+
+### ⭐ Give It a Star!
+If you found this project cool, funny, or technically interesting, **please consider leaving a ⭐️ on the repository!** It helps a ton and motivates me to keep building crazy stuff like this. Happy slithering! 🐍
 
 
-## 📂 File Structure
-* `snake_game_desktop.py`: The main game loop, input handling, and grid math.
-* `icon_organizer.py`: A custom supporting module that prepares the desktop by aligning and organizing icons before the game starts and also restores layput.
-* `mouse_hide.py` : Supporting module for cursor hifing for seamless gameplay.
-* `physical_mouse_blocking.py` : Supporting module for blocking accidental mouse and keyboard clicks.
-* `grid_size.py` : Supporting module for automatically finding desktop grid size, dpi, column, row size.
-
-## 🏆 Winning the Game
-
-The game ends if you hit the edge of the screen, run into your own tail, or press `ESC`. However, if you successfully eat all the target icons, you win. If your desktop has 24 or more icons, you will unlock a special automated desktop-icon arrangement at the end of the game!
-
-## 🤝 Feedback & Contributions Wanted!
-
-Because this game physically drags your desktop icons and relies on specific OS interactions, it is highly experimental. Every computer setup is a little different, so I would love your help testing it out and improving it!
-
-**🎮 For Players & Testers:**
-* **Play the game:** Download the `.exe` from the Releases tab and give it a try.
-* **Report Bugs:** Did the snake glitch near the taskbar? Did it accidentally open an app while dragging? If something breaks, please open an **Issue** on this repository. Let me know your screen resolution and Windows version!
-* **Suggest Features:** Have a cool idea for a new feature or a different pixel-art win screen? Let me know in the Issues tab.
-
-**💻 For Developers:**
-* **Review & Optimize:** Feel free to fork this repository! If you can improve the `pyautogui` dragging efficiency, make the `fruit_transport` logic faster, or optimize the `icon_organizer.py`, your pull requests are welcome.
-* **Expand Compatibility:** Currently, the grid math is heavily optimized for a 1920x1080 display. If you can help make the grid calculations dynamically scale to any monitor resolution, that would be a massive improvement. 
-
-To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
+#### Tapomoy Sarkar - [helloworld3003](https://github.com/helloworld3003)
 
 ## 🚀 Latest Updates
 v1.0.1 - March 3, 2026<br>
@@ -88,8 +119,3 @@ v1.0.5 - March 28, 2026 <br>
 * Added a transparent display to show score, mute/paused status.
 * Added animation for fruits, and boundary wall.
 * Updated the Message boxes, added Play again and leaderboard reset options.
-
-
-
-
-
