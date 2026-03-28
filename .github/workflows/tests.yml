@@ -39,7 +39,14 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    # 8. Finally, run your actual tests using pytest!
+     # 8. Finally, run your actual tests using pytest individually!
     - name: Test with pytest
       run: |
-        pytest
+        pytest tests/test_logic.py
+        pytest tests/test_scores.py
+        pytest tests/test_grid.py
+        pytest tests/test_keyboard.py
+        pytest tests/test_icon_organizer.py
+        pytest tests/test_resource_path.py
+        pytest tests/test_overlay.py
+
