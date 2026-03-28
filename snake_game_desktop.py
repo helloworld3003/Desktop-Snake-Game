@@ -16,9 +16,14 @@ import icon_organizer as io
 from physical_mouse_blocking import MouseBlocker
 import mouse_hide
 
+from hud_overlay import GameOverlay
+from leaderboard_ui import show_visual_leaderboard
+
 # ==============================================================================
 # ======================== DESKTOP SNAKE GAME ==================================
 # ==============================================================================
+
+overlay = None
 
 # --- Game Configuration & Grid Setup ---
 window_size = pag.size()     # Current screen resolution
@@ -28,11 +33,12 @@ ln = 130                     # Initial cell length
 r = 8                        # Total grid rows
 c = 20                       # Total grid columns
 BORDER_PADDING = 25          # Padding from screen edges
-EASTER_EGG_ICON_COUNT = 24   # Icon count to trigger Easter Egg
+EASTER_EGG_ICON_COUNT = 23   # Icon count to trigger Easter Egg
 GAME_TICK = duration_drag              # Fixed interval (in seconds) for each game frame
 
 # Retrieve accurate spacing based on screen metrics
 wd, ln, r, c = grid_size.get_true_desktop_spacing(window_size)
+BORDER_PADDING = int(((wd+ln)/2)*0.2)         # Padding from screen edges
 
 # --- Game State Variables ---
 fruit: Optional[Tuple[int, int]] = None  # Coordinates of the active fruit
@@ -201,6 +207,8 @@ def fruit_transport(icon_col: int, icon_row: int) -> None:
         
     time.sleep(0.1)
     fruit = (grid_col, grid_row)
+    if overlay:
+        overlay.update_fruit_position(target_x, target_y, wd, ln)
 
 
 
@@ -258,7 +266,8 @@ def win_mssg(i: int) -> Tuple[int, int]:
 # ==============================================================================
 
 def main() -> None:
-    global on, next_direction, previous, snake_body, reason, duration_drag, GAME_TICK
+    global on, next_direction, previous, snake_body, reason, duration_drag, GAME_TICK, overlay, BORDER_PADDING, paused, mute
+    on=True;reason="";paused=False;mute=False;overlay=None;next_direction="right";previous="left";snake_body=[];duration_drag=0.2;GAME_TICK=0.2
     mouse_blocker = None
     difficulty = 'unknown'  # Safe default if game exits before difficulty prompt
     ic = 0                  # Safe default if init fails before ic is assigned
@@ -269,8 +278,8 @@ def main() -> None:
     try:
         print("🎮 Initializing Desktop Snake Game...")
         io.open_desktop()  # Ensure the desktop is in focus       
-        time.sleep(0.2)
-        
+        time.sleep(0.5)
+        pag.click(1,1)
         # Take a snapshot of the original layout for backup safety
         timestamp = time.strftime("%H_%M_%S", time.localtime())
         os.makedirs(os.path.join(os.path.expanduser("~"), "Desktop", "snake_game_desktop"), exist_ok=True)
@@ -294,6 +303,11 @@ def main() -> None:
         elif difficulty=='hard':
             duration_drag=0.1
         GAME_TICK = duration_drag  # Sync game tick to chosen difficulty
+        
+        # Start overlay
+        if overlay is None:
+            overlay = GameOverlay()
+            
         if not (2 <= ic < int(r * c * 0.7)):
             print("❌ Invalid number of icons on the desktop. Exiting.")
             return
@@ -317,6 +331,8 @@ def main() -> None:
     icon_row = (icon-1) % r
     icon -= 1 if icon > 0 else 0
     
+    if overlay:
+        overlay.update_boundary((icon_col+1) * wd, int(BORDER_PADDING*0.2), window_size[0] - BORDER_PADDING, r * ln - int(BORDER_PADDING))
     
     pag.alert(text='🎮 Controls:\n- WASD or Arrow Keys: Move\n- P: Pause/Resume\n- M: Mute/Unmute\n- ESC: Exit', title='Desktop Snake Game', button='OK')
 
@@ -337,6 +353,21 @@ def main() -> None:
     print("   🚪  Press ESC to exit")
     print("=========================================\n")
     
+    
+        
+    print("⏳ Starting countdown...")
+    for i in range(3, 0, -1):
+        if overlay:
+            overlay.update_center_text(str(i), "white")
+        sound('keyboard_click.wav')
+        time.sleep(1)
+    if overlay:
+        overlay.update_center_text("GO!", "#00ff00")
+    sound('fruit_eat.wav')
+    time.sleep(1)
+    if overlay:
+        overlay.update_center_text("")
+        overlay.update_score(0, ic-1, 1, ic-1)
     try:
         kb.hook(on_key_event, suppress=True) # Listen & suppress keys to avoid Windows ding
     except Exception as e:
@@ -351,8 +382,13 @@ def main() -> None:
             loop_start_time = time.time()
 
             if paused:
+                if overlay:
+                    overlay.update_status(f"PAUSED{' & MUTED' if mute else ''}")
                 time.sleep(0.1)
                 continue
+            else:
+                if overlay:
+                    overlay.update_status("MUTED" if mute else "")
 
             # Update direction logically 
             if next_direction is not None:
@@ -378,7 +414,7 @@ def main() -> None:
             pixel_x, pixel_y = get_pixels(new_head_col, new_head_row)
             
             # 1. Wall Hit Check
-            out_of_bounds_x = not ((icon_col) * wd < pixel_x < (window_size[0] - BORDER_PADDING))
+            out_of_bounds_x = not ((icon_col+1) * wd < pixel_x < (window_size[0] - BORDER_PADDING))
             out_of_bounds_y = not (BORDER_PADDING < pixel_y < (r * ln))
             if out_of_bounds_x or out_of_bounds_y:
                 reason = "💥 Crash! The snake hit the desktop border - Game Over!"
@@ -402,9 +438,13 @@ def main() -> None:
                 sound('win.wav')
                 # Secret easter egg execution if icons >= EASTER_EGG_ICON_COUNT
                 if ic >= EASTER_EGG_ICON_COUNT:
+                    if overlay:
+                        overlay.play_easter_egg_animation()
                     io.set_auto_arrange(True)
                     time.sleep(0.5)
                     io.set_auto_arrange(False)
+                    time.sleep(0.5)
+                    pag.click(1,1)
                     time.sleep(0.5)
                     for i in range(EASTER_EGG_ICON_COUNT):
                         win_icon_col = (icon-1) // r
@@ -441,9 +481,14 @@ def main() -> None:
                 fruit_transport(icon_col, icon_row)
                 icon -= 1 if icon > 0 else 0
                 
+                if overlay:
+                    overlay.update_boundary((icon_col+1) * wd, int(BORDER_PADDING*0.2), window_size[0] - BORDER_PADDING, r * ln - int(BORDER_PADDING))
+                
                 # Orient crosshairs back to the snake head
                 pag.moveTo(pixel_x, pixel_y)
                 print(f"🍎 Yum! +1 Score. Length: {len(snake_body)} | Remaining Icons: {icon}")
+                if overlay:
+                    overlay.update_score(len(snake_body)-1, ic-1, len(snake_body), icon)
             
             else:
                 # Ordinary movement (Shift tail to new head pos)
@@ -497,31 +542,33 @@ def main() -> None:
             print(f"📝 Reason: {reason}")
             print("=========================================\n")
 
+            if overlay:
+                overlay.stop()
+                overlay = None
+
             # --- Save & display high scores ---
             updated_scores = save_score(final_score, max_score, difficulty, won)
-            leaderboard_text = format_leaderboard(updated_scores, final_score)
+            
+            final_text = f"Final Score: {final_score}/{max_score}"
+            play_again = show_visual_leaderboard(updated_scores, final_score, final_text, reason, won)
 
             if won:
-                msg = f'🏆 Congratulations! You consumed ALL icons!\n\n{leaderboard_text}'
-                pag.alert(text=msg, title='Desktop Snake Game - VICTORY!', button='OK')
                 pag.click(1, 1)
                 pag.hotkey('ctrl', 'a')
-                pag.confirm('Do you Want to restore the layout?', title='Desktop Snake Game - VICTORY!', buttons=['Yes', 'No'])
-                if pag.confirm == 'Yes':
+                res = pag.confirm('Do you Want to restore the layout?', title='Desktop Snake Game - VICTORY!', buttons=['Yes', 'No'])
+                if res == 'Yes':
                     io.restore_layout(my_layout)
             else:
-                msg = f"{reason}\nFinal Score: {final_score}/{max_score}\n\n{leaderboard_text}"
-                pag.alert(text=msg, title='Desktop Snake Game', button='OK')
-                pag.confirm('Do you Want to play again?', title='Desktop Snake Game - VICTORY!', buttons=['Yes', 'No'])
-                if pag.confirm == 'Yes':
-                    main()
-                # Standardize arrangement before abandoning UI
-                io.open_desktop()
-                io.set_auto_arrange(True)
-                time.sleep(0.1)
-                io.set_auto_arrange(False)
-                time.sleep(0.1)
-                io.restore_layout(my_layout)
+                    # Standardize arrangement before abandoning UI
+                    io.open_desktop()
+                    io.set_auto_arrange(True)
+                    time.sleep(0.1)
+                    io.set_auto_arrange(False)
+                    time.sleep(0.1)
+                    io.restore_layout(my_layout)
+                    if play_again:
+                        # Execute play again
+                        main()
         except Exception as e:
             print(f"Cleanup non-fatal error: {e}")
 
