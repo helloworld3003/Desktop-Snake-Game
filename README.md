@@ -51,36 +51,44 @@ Because this game physically drags your desktop icons and relies on specific OS 
 
 To contribute code, simply fork the repo, create a new branch for your feature or bug fix, and submit a Pull Request (PR)!
 
-### 🚀 Latest Updates
-v1.0.1 - March 3, 2026<br><br>
-The game engine has been completely overhauled to remove all hardcoded constraints, replacing fixed values with dynamic variables. The grid math now automatically scales to flawlessly match any screen resolution and Windows DPI setting. This is powered by a newly added `grid_size.py` utility, which directly queries the hidden Windows `SysListView32` to extract your true physical desktop rendering metrics. Alongside these structural upgrades, the core codebase and terminal outputs have been polished and decorated for a cleaner, more intuitive experience.
+## 🚀 Latest Updates
+v1.0.1 - March 3, 2026<br>
+* The game engine has been completely overhauled to remove all hardcoded constraints, replacing fixed values with dynamic variables.
+* The grid math now automatically scales to flawlessly match any screen resolution and Windows DPI setting.
+* Alongside these structural upgrades, the core codebase and terminal outputs have been polished and decorated for a cleaner, more intuitive experience.
 
 v1.0.2 - March 11, 2026
-* **1. Grid-Based Architecture**<br>
+* Grid-Based Architecture<br>
        Coord Translation: Added `get_pixels(col, row)` to dynamically map grid positions to absolute screen pixels.<br>
        Grid Migration: Switched from volatile pixel calculations to a stable `(col, row)` grid system.
-* **2. Physical Mouse Blocking Engine**<br>
+* Physical Mouse Blocking Engine<br>
        New Feature: Added `physical_mouse_blocking.py` (via `ctypes` Windows hooks) to stop physical mouse interference during gameplay.<br>
        Smart Whitelist: Allows `PyAutoGUI` injected commands to pass through unhindered.<br>
        Stability Fixes: Resolved 64-bit `OverflowError` crashes and guaranteed mouse restoration on game exit/crash.
-* **3. Icon & Drag Refinements**<br>
+* Icon & Drag Refinements<br>
        Math Safety: Prevented negative index bounds at game end (`icon -= 1 if icon > 0 else 0`).
-* **4. Gameplay Enhancements**<br>
+* Gameplay Enhancements<br>
        Collision Safety: Fruits now safely spawn only on empty grid spaces, avoiding snake body overlaps.<br>
        Simplified Checks: Wall and self-collision detection now use lightning-fast list checks instead of pixel boundaries.<br>
        Control Scheme: Updated directional movement bindings from generic arrow keys to the numpad (4, 5, 6, 8) for improved accessibility.<br>
        Dynamic Animations: Centered the "W I N" endgame desktop icon message cleanly in the bottom-right corner.
 
-v1.0.3 - March 18, 2026<br><br>
-**1. Highscore & Persistence**: Added a `persistent highscore system` and automatic desktop snapshots, all stored in a dedicated folder: Desktop/snake_game_desktop/.<br>
-**2. Standardized Controls**: Reverted movement keys from experimental mappings back to the standard `Arrow Keys` for a more intuitive experience.<br>
-**3. Enhanced Audio**: Integrated `custom sound effects (asynchronous .wav files)` and successfully suppressed annoying Windows "exclamation" dings.<br>
-**4. Cursor Protection**: Implemented `cursor hiding mechanism` for seamless gameplay(Cursor is hidden during gameplay and restored when the game is exited). 
+v1.0.3 - March 18, 2026<br>
+* Highscore & Persistence: Added a `persistent highscore system` and automatic desktop snapshots, all stored in a dedicated folder: Desktop/snake_game_desktop/.<br>
+* Standardized Controls: Reverted movement keys from experimental mappings back to the standard `Arrow Keys` for a more intuitive experience.<br>
+* Enhanced Audio: Integrated `custom sound effects (asynchronous .wav files)` and successfully suppressed annoying Windows "exclamation" dings.<br>
+* Cursor Protection: Implemented `cursor hiding mechanism` for seamless gameplay(Cursor is hidden during gameplay and restored when the game is exited). 
 
-v1.0.4 - March 21, 2026 <br><br>
+v1.0.4 - March 21, 2026 <br>
 * Added Automatic Icon Restore
 * Make it very fast and unfailing
 * Working flawlessly
+
+v1.0.5 - March 28, 2026 <br>
+* Added a transparent display to show score, mute/paused status.
+* Added animation for fruits, and boundary wall.
+* Updated the Message boxes, added Play again and leaderboard reset options.
+
 
 
 
