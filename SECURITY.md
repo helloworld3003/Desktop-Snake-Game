@@ -10,7 +10,7 @@ Currently, the Desktop Snake Game is in active development on the `main` branch.
 
 | Version/Branch | Supported          |
 | -------------- | ------------------ |
-| `main` (1.0.2)| :white_check_mark: |
+| `main` (1.0.5)| :white_check_mark: |
 | Older commits  | :x:                |
 
 ## Reporting a Vulnerability
