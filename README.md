@@ -8,6 +8,7 @@ Instead of a traditional windowed game, this script uses **PyAutoGUI** to physic
 
 
 ---
+[![DeepWiki](https://img.shields.io/badge/DeepWiki-AI--Documentation-blue?style=for-the-badge&logo=wikipedia)](https://deepwiki.com/helloworld3003/Desktop-Snake-Game)
 
 ## 🚀 Quick Overview
 
