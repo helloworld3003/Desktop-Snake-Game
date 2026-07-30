@@ -3,5 +3,5 @@ pycache/
 build/
 dist/
 *.spec
-*.exe
 *.7z
+snake_game_desktop.zip
