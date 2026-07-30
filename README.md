@@ -120,3 +120,7 @@ v1.0.5 - March 28, 2026 <br>
 * Added a transparent display to show score, mute/paused status.
 * Added animation for fruits, and boundary wall.
 * Updated the Message boxes, added Play again and leaderboard reset options.
+
+v1.6.0 - July 30, 2026 <br>
+* Pixel Drift Fix: Integrated real-time actual icon layout tracking to dynamically correct prediction coordinates before dragging. This completely eliminates accumulated pixel errors over time and ensures pixel-perfect snaps!
+* Updated build tracking to use `.zip` and removed `.7z` archives from the git tree.
