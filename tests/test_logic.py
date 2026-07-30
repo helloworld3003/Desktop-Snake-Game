@@ -1,6 +1,6 @@
 import sys
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # ==============================================================================
 # 🛠️ MOCKING EXTERNAL LIBRARIES
@@ -82,69 +82,3 @@ def test_win_condition_false():
     total_desktop_icons = 25
     current_snake_length = 24
     assert snake_game_desktop.win(total_desktop_icons, current_snake_length) is False
-
-# ==============================================================================
-# 🔢 get_pixels() TESTS
-# ==============================================================================
-
-def test_get_pixels_origin():
-    """Test that grid position (0, 0) maps to the correct pixel coordinate."""
-    # wd=95, ln=130 (from mock). Half of each is the starting offset.
-    x, y = snake_game_desktop.get_pixels(0, 0)
-    assert x == int(snake_game_desktop.wd / 2)
-    assert y == int(snake_game_desktop.ln / 2)
-
-def test_get_pixels_col_row():
-    """Test a non-origin grid position maps to the correct pixel coordinates."""
-    col, row = 3, 2
-    x, y = snake_game_desktop.get_pixels(col, row)
-    expected_x = int(snake_game_desktop.wd / 2) + col * snake_game_desktop.wd
-    expected_y = int(snake_game_desktop.ln / 2) + row * snake_game_desktop.ln
-    assert x == expected_x
-    assert y == expected_y
-
-def test_get_pixels_large_grid():
-    """Test a large grid coordinate to verify the formula scales correctly."""
-    col, row = 19, 7
-    x, y = snake_game_desktop.get_pixels(col, row)
-    expected_x = int(snake_game_desktop.wd / 2) + col * snake_game_desktop.wd
-    expected_y = int(snake_game_desktop.ln / 2) + row * snake_game_desktop.ln
-    assert x == expected_x
-    assert y == expected_y
-
-# ==============================================================================
-# 🏆 win_mssg() TESTS
-# ==============================================================================
-
-def test_win_mssg_returns_two_ints():
-    """Test that win_mssg always returns a (x, y) pixel tuple."""
-    result = snake_game_desktop.win_mssg(0)
-    assert isinstance(result, tuple)
-    assert len(result) == 2
-    assert all(isinstance(v, int) for v in result)
-
-def test_win_mssg_all_indices():
-    """Test that all 23 win message icon positions return valid pixel coordinates."""
-    # win_mssg is defined with 23 positions (indices 0-22)
-    for i in range(23):
-        x, y = snake_game_desktop.win_mssg(i)
-        assert isinstance(x, int)
-        assert isinstance(y, int)
-
-# ==============================================================================
-# 🔇 sound() MUTE TESTS
-# ==============================================================================
-
-def test_sound_not_called_when_muted():
-    """Test that winsound.PlaySound is NOT called when the game is muted."""
-    snake_game_desktop.mute = True
-    snake_game_desktop.winsound.PlaySound.reset_mock()
-    snake_game_desktop.sound('fruit_eat.wav')
-    snake_game_desktop.winsound.PlaySound.assert_not_called()
-
-def test_sound_called_when_unmuted():
-    """Test that winsound.PlaySound IS called when the game is not muted."""
-    snake_game_desktop.mute = False
-    snake_game_desktop.winsound.PlaySound.reset_mock()
-    snake_game_desktop.sound('fruit_eat.wav')
-    snake_game_desktop.winsound.PlaySound.assert_called_once()

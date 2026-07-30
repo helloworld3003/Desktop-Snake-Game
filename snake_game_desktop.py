@@ -135,6 +135,23 @@ def get_pixels(col: int, row: int) -> Tuple[int, int]:
     return int(wd/2) + col * wd, int(ln/2) + row * ln
 
 
+def get_closest_icon_position(target_x: int, target_y: int) -> Tuple[int, int]:
+    """
+    Finds the actual center position of the icon closest to the predicted target_x and target_y.
+    """
+    layout = io.save_layout()
+    if not layout:
+        return target_x, target_y
+        
+    def dist_sq(item):
+        center_x = item['x'] + int(wd/2)
+        center_y = item['y'] + int(ln/2)
+        return (center_x - target_x)**2 + (center_y - target_y)**2
+        
+    closest_item = min(layout, key=dist_sq)
+    return closest_item['x'] + int(wd/2), closest_item['y'] + int(ln/2)
+
+
 def on_key_event(event) -> None:
     """
     Handle keyboard events for direction changes smoothly.
@@ -184,6 +201,7 @@ def fruit_transport(icon_col: int, icon_row: int) -> None:
 
     # Navigate to the target icon's original grid position
     start_x, start_y = get_pixels(icon_col, icon_row)
+    start_x, start_y = get_closest_icon_position(start_x, start_y)
     pag.moveTo(start_x, start_y)
     time.sleep(0.1)
     
@@ -266,7 +284,7 @@ def win_mssg(i: int) -> Tuple[int, int]:
 # ==============================================================================
 
 def main() -> None:
-    global on, next_direction, previous, snake_body, reason, duration_drag, GAME_TICK, overlay, BORDER_PADDING, paused, mute
+    global on, next_direction, previous, snake_body, reason, duration_drag, GAME_TICK, overlay, BORDER_PADDING, paused, mute, r
     on=True;reason="";paused=False;mute=False;overlay=None;next_direction="right";previous="left";snake_body=[];duration_drag=0.2;GAME_TICK=0.2
     mouse_blocker = None
     difficulty = 'unknown'  # Safe default if game exits before difficulty prompt
@@ -293,6 +311,13 @@ def main() -> None:
         time.sleep(0.1)
         io.set_auto_arrange(False)
         time.sleep(0.1)
+        
+        # Read the perfect packed layout to determine the true row count
+        packed_layout = io.save_layout()
+        if len(packed_layout) > 0:
+            col_0_x = packed_layout[0]['x']
+            r = sum(1 for item in packed_layout if item['x'] == col_0_x)
+            
         ic = int(io.count_icons())  
         icon = ic
         difficulty=pag.confirm(text='Choose Difficulty', title='Desktop Snake Game', buttons=['easy','medium','hard']) or 'unknown'
@@ -344,6 +369,7 @@ def main() -> None:
     snake_body = [(icon_col, icon_row)]
     # Emulate the start by clicking at the root coordinate
     start_x, start_y = get_pixels(icon_col, icon_row)
+    start_x, start_y = get_closest_icon_position(start_x, start_y)
     pag.click(start_x, start_y) 
     time.sleep(0.2)
     
@@ -451,6 +477,7 @@ def main() -> None:
                         win_icon_row = (icon-1) % r
                         
                         target_x, target_y = get_pixels(win_icon_col, win_icon_row)
+                        target_x, target_y = get_closest_icon_position(target_x, target_y)
                         
                         pag.moveTo(target_x, target_y)
                         time.sleep(0.1)
@@ -494,6 +521,7 @@ def main() -> None:
                 # Ordinary movement (Shift tail to new head pos)
                 tail_col, tail_row = snake_body[-1]
                 tail_x, tail_y = get_pixels(tail_col, tail_row)
+                tail_x, tail_y = get_closest_icon_position(tail_x, tail_y)
                 
                 pag.moveTo(tail_x, tail_y)
                 time.sleep(0.1)

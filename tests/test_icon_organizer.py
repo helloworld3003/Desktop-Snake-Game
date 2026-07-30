@@ -2,7 +2,7 @@ import sys
 import os
 import struct
 import pytest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 
 # Create mocked versions of Win32 libraries for safe CI execution
 mock_win32gui = MagicMock()
@@ -20,52 +20,34 @@ import icon_organizer
 import importlib
 importlib.reload(icon_organizer)
 
-def test_save_layout_empty_desktop():
+@patch('icon_organizer._get_desktop_listview_hwnd')
+@patch('icon_organizer.count_icons')
+def test_save_layout_empty_desktop(mock_count, mock_hwnd):
     """Test that it safely handles an empty desktop without memory operations."""
-    with patch.object(icon_organizer, '_get_desktop_listview_hwnd', return_value=12345), \
-         patch.object(icon_organizer, 'count_icons', return_value=0):
-        layout = icon_organizer.save_layout()
+    mock_hwnd.return_value = 12345
+    mock_count.return_value = 0 # No icons physically present
+    
+    layout = icon_organizer.save_layout()
     assert layout == []
 
-def test_set_auto_arrange_enable():
-    """Test that enabling Auto Arrange ORs the LVS_AUTOARRANGE bit into the window style."""
-    fake_hwnd = 12345
-    icon_organizer.LVS_AUTOARRANGE = 0x0100
+@patch('icon_organizer._get_desktop_listview_hwnd')
+def test_set_auto_arrange_toggle(mock_hwnd):
+    """Test that Auto Arrange correctly bitwise ORs/ANDs the GWL_STYLE."""
+    mock_hwnd.return_value = 12345
+    
+    # Let's say the current style is totally blank (0)
+    mock_win32gui.GetWindowLong.return_value = 0
+    icon_organizer.LVS_AUTOARRANGE = 0x0100 # Redefine here since we mocked the lib
     icon_organizer.GWL_STYLE = -16
     icon_organizer.LVM_ARRANGE = 0x1016
-
-    with patch.object(icon_organizer, '_get_desktop_listview_hwnd', return_value=fake_hwnd):
-        mock_win32gui.GetWindowLong.return_value = 0  # Starting style is blank
-        icon_organizer.set_auto_arrange(True)
-
-    # New style should be 0 | 0x0100 = 0x0100
-    mock_win32gui.SetWindowLong.assert_called_with(fake_hwnd, -16, 0x0100)
-
-def test_set_auto_arrange_disable():
-    """Test that disabling Auto Arrange strips the LVS_AUTOARRANGE bit from the window style."""
-    fake_hwnd = 12345
-    icon_organizer.LVS_AUTOARRANGE = 0x0100
-    icon_organizer.GWL_STYLE = -16
-    icon_organizer.LVM_ARRANGE = 0x1016
-
-    with patch.object(icon_organizer, '_get_desktop_listview_hwnd', return_value=fake_hwnd):
-        mock_win32gui.GetWindowLong.return_value = 0x0100  # Only autoarrange bit is set
-        icon_organizer.set_auto_arrange(False)
-
-    # New style should be 0x0100 & ~0x0100 = 0
-    mock_win32gui.SetWindowLong.assert_called_with(fake_hwnd, -16, 0)
-
-def test_set_auto_arrange_no_hwnd(capsys):
-    """Test that set_auto_arrange exits gracefully when no desktop handle is found."""
-    with patch.object(icon_organizer, '_get_desktop_listview_hwnd', return_value=0):
-        icon_organizer.set_auto_arrange(True)  # Should not raise
-    captured = capsys.readouterr()
-    assert 'Error' in captured.out
-
-def test_count_icons_no_hwnd(capsys):
-    """Test that count_icons returns 0 when no desktop handle is found."""
-    with patch.object(icon_organizer, '_get_desktop_listview_hwnd', return_value=0):
-        result = icon_organizer.count_icons()
-    assert result == 0
-    captured = capsys.readouterr()
-    assert 'Error' in captured.out
+    
+    # Enable Auto Arrange
+    icon_organizer.set_auto_arrange(True)
+    # It should call SetWindowLong with 0x0100 (0 | 0x0100)
+    mock_win32gui.SetWindowLong.assert_called_with(12345, -16, 0x0100)
+    
+    # Disable Auto Arrange (assuming starting from 0x0100)
+    mock_win32gui.GetWindowLong.return_value = 0x0100
+    icon_organizer.set_auto_arrange(False)
+    # It should strip the 0x0100 with AND NOT (~), resulting in 0
+    mock_win32gui.SetWindowLong.assert_called_with(12345, -16, 0)

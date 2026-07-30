@@ -56,4 +56,4 @@ if __name__ == "__main__":
     print(f"True Desktop Grid Height: {ln} pixels")
     print(f'No. of Rows: {r}')
     print(f'No. of Columns: {c}')
-    print("-" * 40)
+    print("-" * 40)
